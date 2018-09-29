@@ -17,8 +17,8 @@ HaierJS = window.HaierJS || {};
 			browse_button : 'pickfiles', // button id
 
 			runtimes : 'html5,flash,silverlight,html4',
-			flash_swf_url : baseURL + 'js/vendor/plupload/Moxie.swf',
-			silverlight_xap_url : baseURL + 'js/vendor/plupload/Moxie.xap',
+			flash_swf_url :  'https://cdn.jsdelivr.net/gh/tongjieme/public-assets@0ad9b6ea3c60a3c2ee6ff17f04038afcd5a30721js/vendor/plupload/Moxie.swf',
+			silverlight_xap_url : 'https://cdn.jsdelivr.net/gh/tongjieme/public-assets@0ad9b6ea3c60a3c2ee6ff17f04038afcd5a30721js/vendor/plupload/Moxie.xap',
 			multi_selection: true,// default
 			
 			filters : {
