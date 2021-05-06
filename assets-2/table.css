@@ -1,0 +1,44 @@
+
+.lz table {
+    width: 100%;
+    max-width: 750px;
+    margin-bottom: 1rem;
+    background-color: transparent;
+    border: 1px solid #dee2e6;
+    border-collapse: collapse
+}
+
+.lz table td,.lz table th {
+    padding: .75rem;
+    vertical-align: top;
+    border-top: 1px solid #dee2e6
+}
+
+.lz table thead th {
+    vertical-align: bottom;
+    border-bottom: 2px solid #dee2e6
+}
+
+.lz table tbody+tbody {
+    border-top: 2px solid #dee2e6
+}
+
+.lz table table {
+    background-color: #fff
+}
+
+.lz table {
+    border: 1px solid #dee2e6
+}
+
+.lz table td,.lz table th {
+    border: 1px solid #dee2e6
+}
+
+.lz table thead td,.lz table thead th {
+    border-bottom-width: 2px
+}
+
+.lz table tbody tr:nth-of-type(odd) {
+    background-color: rgba(0,0,0,.05)
+}
