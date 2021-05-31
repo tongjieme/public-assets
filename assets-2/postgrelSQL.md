@@ -1,4 +1,4 @@
-# what is failed over
+# failed over
 # backup 
 - logical backup
 - phisical backup
