@@ -6,7 +6,7 @@
     replica, 
     Continuous Archiving and Point-in-Time Recovery (PITR) https://www.postgresql.org/docs/9.1/continuous-archiving.html
   
-
+ 
 
 # production backup
 continuous archiving and PITR
