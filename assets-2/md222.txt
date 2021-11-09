@@ -1,1 +1,2 @@
-empty file22
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/layui-src@2.5.5/dist/css/layui.css">
+<script src="https://cdn.jsdelivr.net/npm/layui-src@2.5.5/dist/layui.all.js"></script>
