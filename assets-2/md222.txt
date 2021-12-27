@@ -1,2 +1,44 @@
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/layui-src@2.5.5/dist/css/layui.css">
-<script src="https://cdn.jsdelivr.net/npm/layui-src@2.5.5/dist/layui.all.js"></script>
+package jwt
+
+import (
+	"github.com/dgrijalva/jwt-go"
+	"time"
+)
+
+type MyCustomClaims struct {
+	UserId string
+	jwt.StandardClaims
+}
+
+func GenerateToken(UserId string, secretKey string) (string, error) {
+	nowTime := time.Now()
+	expireTime := nowTime.Add(365 * 24 * time.Hour)
+	issuer := "system"
+	claims := MyCustomClaims{
+		UserId: UserId,
+		StandardClaims: jwt.StandardClaims{
+			ExpiresAt: expireTime.Unix(),
+			Issuer:    issuer,
+		},
+	}
+
+	token, err := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte(secretKey))
+	return token, err
+}
+
+func ParseToken(token string, secretKey string) (*MyCustomClaims, error) {
+	tokenClaims, err := jwt.ParseWithClaims(token, &MyCustomClaims{}, func(token *jwt.Token) (interface{}, error) {
+		return []byte(secretKey), nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if tokenClaims != nil {
+		if claims, ok := tokenClaims.Claims.(*MyCustomClaims); ok && tokenClaims.Valid {
+			return claims, nil
+		}
+	}
+
+	return nil, err
+}
