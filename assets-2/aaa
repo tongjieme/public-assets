@@ -1,11 +1,43 @@
-@echo off
-REM Delete eval folder with licence key and options.xml which contains a reference to it
-for %%I in ("WebStorm", "IntelliJ", "CLion", "Rider", "GoLand", "PhpStorm", "Resharper", "PyCharm") do (
-    for /d %%a in ("%APPDATA%\JetBrains\%%I*") do (
-        rd /s /q "%%a/eval"
-        del /q "%%a\options\other.xml"
-    )
-)
+#! /bin/bash
+date_between() {
+    TIME=$1
+    FROM=$2
+    TO=$3
+    
+    RESULT=false
 
-reg delete "HKEY_CURRENT_USER\SOFTWARE\JavaSoft\Prefs\jetbrains" /f
-pause
+    if [[ "$FROM" < "$TO" ]]; thenFROM < $TIME) || ($TIME < $TO) ]]; then
+            RESULT=true
+        fi
+    fi
+
+    echo $RESULT
+}
+
+test_date_between_human
+        if [[ ("$FROM" < "$TIME") && ("$TIME" < "$TO") ]]; then
+            RESULT=true
+        fi
+    else
+        if [[ ("$FROM" < "$TIME") || ("$TIME" < "$TO") ]]; then
+            RESULT=true
+        fi
+    fi
+
+    echo "$RESULT"
+}
+
+test_date_between_human_readable_time_in_range() {
+    assertTrue $(date_between '07:10' '07:00' '07:15')
+}
+test_date_between_human_readable_time_out_of_range() {
+    assertFalse $(date_between '07:40' '07:00' '07:15')
+}
+test_date_between_human_readable_over_midnight_time_in_range() {
+    assertTrue $(date_between '23:30' '23:00' '01:00')
+}
+test_date_between_human_readable_over_midnight_time_out_of_range() {
+    assertFalse $(date_between '07:00' '23:00' '01:00')
+}
+
+. shunit2
