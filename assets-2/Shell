@@ -1,102 +1,102 @@
-package shell
-
-import (
-	"fmt"
-	"golang.org/x/crypto/ssh"
-	"io/ioutil"
-	"net"
-	"os/exec"
-	"time"
-)
-
-func Cmd(cmd string, shell bool) (out []byte, err error) {
-	if shell {
-		out, err = exec.Command("bash", "-c", cmd).CombinedOutput()
-	} else {
-		out, err = exec.Command(cmd).CombinedOutput()
-	}
-	return
-}
-
-func Connect(user, password, host, key string, port int, cipherList []string) (*ssh.Session, error) {
-	var (
-		auth         []ssh.AuthMethod
-		addr         string
-		clientConfig *ssh.ClientConfig
-		client       *ssh.Client
-		config       ssh.Config
-		session      *ssh.Session
-		err          error
-	)
-	// get auth method
-	auth = make([]ssh.AuthMethod, 0)
-	if key == "" {
-		auth = append(auth, ssh.Password(password))
-	} else {
-		pemBytes, err := ioutil.ReadFile(key)
-		if err != nil {
-			return nil, err
-		}
-
-		var signer ssh.Signer
-		if password == "" {
-			signer, err = ssh.ParsePrivateKey(pemBytes)
-		} else {
-			signer, err = ssh.ParsePrivateKeyWithPassphrase(pemBytes, []byte(password))
-		}
-		if err != nil {
-			return nil, err
-		}
-		auth = append(auth, ssh.PublicKeys(signer))
-	}
-
-	if len(cipherList) == 0 {
-		config = ssh.Config{
-			Ciphers: []string{"aes128-ctr", "aes192-ctr", "aes256-ctr", "aes128-gcm@openssh.com", "arcfour256", "arcfour128", "aes128-cbc", "3des-cbc", "aes192-cbc", "aes256-cbc"},
-		}
-	} else {
-		config = ssh.Config{
-			Ciphers: cipherList,
-		}
-	}
-
-	clientConfig = &ssh.ClientConfig{
-		User:    user,
-		Auth:    auth,
-		Timeout: 30 * time.Second,
-		Config:  config,
-		HostKeyCallback: func(hostname string, remote net.Addr, key ssh.PublicKey) error {
-			return nil
-		},
-	}
-
-	// connet to ssh
-	addr = fmt.Sprintf("%s:%d", host, port)
-
-	if client, err = ssh.Dial("tcp", addr, clientConfig); err != nil {
-		return nil, err
-	}
-
-	// create session
-	if session, err = client.NewSession(); err != nil {
-		return nil, err
-	}
-
-	modes := ssh.TerminalModes{
-		ssh.ECHO:          0,     // disable echoing
-		ssh.TTY_OP_ISPEED: 14400, // input speed = 14.4kbaud
-		ssh.TTY_OP_OSPEED: 14400, // output speed = 14.4kbaud
-	}
-
-	if err := session.RequestPty("xterm", 80, 40, modes); err != nil {
-		return nil, err
-	}
-
-	return session, nil
-}
-
-func cmdRemote(session *ssh.Session, cmd string) (combineOutput string, err error)  {
-	combine, err := session.CombinedOutput(cmd)
-
-	return string(combine), err
+/*
+ * 文件名：URIEncode.java  描述： 修改人：gogym 修改时间：2018年11月16日 跟踪单号： 修改单号： 修改内容：
+ */
+ 
+ 
+import java.io.UnsupportedEncodingException;
+ 
+ 
+public class URIEncoder
+{
+ 
+    public static final String ALLOWED_CHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_.!~*'()";
+ 
+    /**
+     * Description:
+     * 
+     * @param str
+     * @return
+     * @throws UnsupportedEncodingException
+     * @see
+     */
+    public static String encodeURI(String str)
+        throws UnsupportedEncodingException
+    {
+        String isoStr = new String(str.getBytes("UTF8"), "ISO-8859-1");
+        char[] chars = isoStr.toCharArray();
+        StringBuffer sb = new StringBuffer();
+        for (int i = 0; i < chars.length; i++ )
+        {
+            if ((chars[i] <= 'z' && chars[i] >= 'a') || (chars[i] <= 'Z' && chars[i] >= 'A')
+                || chars[i] == '-' || chars[i] == '_' || chars[i] == '.' || chars[i] == '!'
+                || chars[i] == '~' || chars[i] == '*' || chars[i] == '\'' || chars[i] == '('
+                || chars[i] == ')' || chars[i] == ';' || chars[i] == '/' || chars[i] == '?'
+                || chars[i] == ':' || chars[i] == '@' || chars[i] == '&' || chars[i] == '='
+                || chars[i] == '+' || chars[i] == '$' || chars[i] == ',' || chars[i] == '#'
+                || (chars[i] <= '9' && chars[i] >= '0'))
+            {
+                sb.append(chars[i]);
+            }
+            else
+            {
+                sb.append("%");
+                sb.append(Integer.toHexString(chars[i]));
+            }
+        }
+        return sb.toString();
+    }
+ 
+    /**
+     * Description:
+     * 
+     * @param input
+     * @return
+     * @see
+     */
+    public static String encodeURIComponent(String input)
+    {
+        if (null == input || "".equals(input.trim()))
+        {
+            return input;
+        }
+ 
+        int l = input.length();
+        StringBuilder o = new StringBuilder(l * 3);
+        try
+        {
+            for (int i = 0; i < l; i++ )
+            {
+                String e = input.substring(i, i + 1);
+                if (ALLOWED_CHARS.indexOf(e) == -1)
+                {
+                    byte[] b = e.getBytes("utf-8");
+                    o.append(getHex(b));
+                    continue;
+                }
+                o.append(e);
+            }
+            return o.toString();
+        }
+        catch (UnsupportedEncodingException e)
+        {
+            e.printStackTrace();
+        }
+        return input;
+    }
+ 
+    private static String getHex(byte buf[])
+    {
+        StringBuilder o = new StringBuilder(buf.length * 3);
+        for (int i = 0; i < buf.length; i++ )
+        {
+            int n = (int)buf[i] & 0xff;
+            o.append("%");
+            if (n < 0x10)
+            {
+                o.append("0");
+            }
+            o.append(Long.toString(n, 16).toUpperCase());
+        }
+        return o.toString();
+    }
 }
