@@ -1,6 +1,1 @@
-1. Implemented an automated synchronization process in Radar for risk delta data, ensuring that data across different views is consistently aligned. This resulted in faster availability of data and improved accuracy.
-2. Developed a visual representation of risk data readiness, providing accurate insights into the status of risk data for better decision-making.
-3. Created a streamlined microservice integrated with Geneos alert system, enabling efficient monitoring of production issues and errors. This significantly reduced response time for problem identification and resolution.
-4. Shared expertise and facilitated the onboarding of Falcon development within the team, promoting knowledge sharing and collaboration.
-Introduced custom link-ons in Radar's different views, allowing users to access and analyze comprehensive risk data in a unified manner.
-5. Implemented business data tracking and measurement capabilities in Radar, enabling effective monitoring and evaluation of project success.
+
