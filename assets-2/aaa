@@ -1,1 +1,14 @@
-
+var runOnceIn = (function(){
+  var ids = {};
+  return function(id, func, delay){
+    if(ids[id]) {
+      clearTimeout(ids[id]);
+    }
+    ids[id] = setTimeout(function() {
+            func()
+            clearTimeout(ids[id]);
+            delete ids[id];
+          }, delay);
+    
+  };
+})()
