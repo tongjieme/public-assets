@@ -1,14 +1,33 @@
-var runOnceIn = (function(){
-  var ids = {};
-  return function(id, func, delay){
-    if(ids[id]) {
-      clearTimeout(ids[id]);
+const fs = require('fs');
+
+function findRestControllers(directory, basePath = '') {
+  const files = fs.readdirSync(directory);
+
+  files.forEach(file => {
+    const filePath = `${directory}/${file}`;
+    const stats = fs.statSync(filePath);
+
+    if (stats.isDirectory()) {
+      const subPath = basePath ? `${basePath}/${file}` : file;
+      findRestControllers(filePath, subPath);
+    } else if (stats.isFile() && file.endsWith('.java')) {
+      const content = fs.readFileSync(filePath, 'utf8');
+
+      if (content.includes('@RestController')) {
+        const className = file.replace('.java', '');
+        const requestMappingMatch = content.match(/@RequestMapping\("([^"]*)"\)/);
+
+        if (requestMappingMatch) {
+          const requestPath = requestMappingMatch[1];
+          const fullPath = basePath ? `${basePath}/${requestPath}` : requestPath;
+          console.log(`Found REST controller: ${className} | Request Path: ${fullPath}`);
+        }
+      }
     }
-    ids[id] = setTimeout(function() {
-            func()
-            clearTimeout(ids[id]);
-            delete ids[id];
-          }, delay);
-    
-  };
-})()
+  });
+}
+
+// Specify the directory to scan
+const directoryToScan = '/path/to/your/spring-boot-app';
+
+findRestControllers(directoryToScan);
