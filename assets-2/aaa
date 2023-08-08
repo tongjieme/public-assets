@@ -1,17 +1,18 @@
 const fs = require('fs');
+const path = require('path');
 
-function findRestControllers(directory, basePath = '') {
-  const files = fs.readdirSync(directory);
+async function findRestControllers(directory, basePath = '') {
+  const files = await fs.promises.readdir(directory);
 
-  files.forEach(file => {
-    const filePath = `${directory}/${file}`;
-    const stats = fs.statSync(filePath);
+  for (const file of files) {
+    const filePath = path.join(directory, file);
+    const stats = await fs.promises.stat(filePath);
 
     if (stats.isDirectory()) {
-      const subPath = basePath ? `${basePath}/${file}` : file;
-      findRestControllers(filePath, subPath);
+      const subPath = path.join(basePath, file);
+      await findRestControllers(filePath, subPath);
     } else if (stats.isFile() && file.endsWith('.java')) {
-      const content = fs.readFileSync(filePath, 'utf8');
+      const content = await fs.promises.readFile(filePath, 'utf8');
 
       if (content.includes('@RestController')) {
         const className = file.replace('.java', '');
@@ -19,15 +20,16 @@ function findRestControllers(directory, basePath = '') {
 
         if (requestMappingMatch) {
           const requestPath = requestMappingMatch[1];
-          const fullPath = basePath ? `${basePath}/${requestPath}` : requestPath;
+          const fullPath = path.join(basePath, requestPath);
           console.log(`Found REST controller: ${className} | Request Path: ${fullPath}`);
         }
       }
     }
-  });
+  }
 }
 
 // Specify the directory to scan
 const directoryToScan = '/path/to/your/spring-boot-app';
 
-findRestControllers(directoryToScan);
+findRestControllers(directoryToScan)
+  .catch(err => console.error(err));
