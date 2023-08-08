@@ -16,12 +16,16 @@ async function findRestControllers(directory, basePath = '') {
 
       if (content.includes('@RestController')) {
         const className = file.replace('.java', '');
-        const requestMappingMatch = content.match(/@RequestMapping\("([^"]*)"\)/);
+        const requestMappingMatch = content.match(/@(RequestMapping|PostMapping)\("([^"]*)"\)/g);
 
         if (requestMappingMatch) {
-          const requestPath = requestMappingMatch[1];
-          const fullPath = path.join(basePath, requestPath);
-          console.log(`Found REST controller: ${className} | Request Path: ${fullPath}`);
+          requestMappingMatch.forEach(match => {
+            const requestPathMatch = match.match(/@(RequestMapping|PostMapping)\("([^"]*)"\)/);
+            const annotation = requestPathMatch[1];
+            const requestPath = requestPathMatch[2];
+            const fullPath = path.join(basePath, requestPath);
+            console.log(`Found ${annotation} | REST controller: ${className} | Request Path: ${fullPath}`);
+          });
         }
       }
     }
