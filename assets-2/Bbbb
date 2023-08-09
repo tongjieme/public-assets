@@ -1,0 +1,36 @@
+Certainly! Here's an example of a Node.js script that recursively searches for a string within a directory:
+
+```javascript
+const fs = require('fs');
+const path = require('path');
+
+function searchFile(filePath, searchString) {
+  const fileContents = fs.readFileSync(filePath, 'utf8');
+  if (fileContents.includes(searchString)) {
+    console.log('Found in file:', filePath);
+  }
+}
+
+function searchDirectory(directoryPath, searchString) {
+  fs.readdirSync(directoryPath).forEach(file => {
+    const filePath = path.join(directoryPath, file);
+    const stats = fs.statSync(filePath);
+    if (stats.isDirectory()) {
+      searchDirectory(filePath, searchString);
+    } else if (stats.isFile()) {
+      searchFile(filePath, searchString);
+    }
+  });
+}
+
+const directoryPath = '/path/to/directory';
+const searchString = 'your search string';
+
+searchDirectory(directoryPath, searchString);
+```
+
+Here's how the script works:
+
+1. The script requires the `fs` (file system) and `path` modules, which are built-in Node.js modules for working with the file system and file paths.
+2. The `searchFile` function reads the contents of a file using `fs.readFileSync` and checks if the file contains the search string using `includes`. If the search string is found, it logs the file path.
+3. The `searchDirectory` function reads the contents of a directory using `fs.readdirSync` and iterates over each file and directory within
