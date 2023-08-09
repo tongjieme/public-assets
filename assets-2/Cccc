@@ -1,0 +1,44 @@
+To ignore certain directories during the recursive search, you can modify the `searchDirectory` function to include a check that skips specific directories. Here's an updated version of the script that demonstrates how to ignore directories:
+
+```javascript
+const fs = require('fs');
+const path = require('path');
+
+const directoriesToIgnore = ['node_modules', 'dist'];
+
+function searchFile(filePath, searchString) {
+  const fileContents = fs.readFileSync(filePath, 'utf8');
+  if (fileContents.includes(searchString)) {
+    console.log('Found in file:', filePath);
+  }
+}
+
+function searchDirectory(directoryPath, searchString) {
+  fs.readdirSync(directoryPath).forEach(file => {
+    const filePath = path.join(directoryPath, file);
+    const stats = fs.statSync(filePath);
+    if (stats.isDirectory()) {
+      const isIgnoredDirectory = directoriesToIgnore.some(dir => filePath.includes(dir));
+      if (!isIgnoredDirectory) {
+        searchDirectory(filePath, searchString);
+      }
+    } else if (stats.isFile()) {
+      searchFile(filePath, searchString);
+    }
+  });
+}
+
+const directoryPath = '/path/to/directory';
+const searchString = 'your search string';
+
+searchDirectory(directoryPath, searchString);
+```
+
+In this updated script:
+
+1. An array called `directoriesToIgnore` is defined, which contains the names of the directories that you want to skip during the search. Modify this array and add the names of the directories you want to ignore.
+2. Inside the `searchDirectory` function, after checking if the current item is a directory, a new variable called `isIgnoredDirectory` is created. It checks if the current `filePath` includes any of the directories listed in `directoriesToIgnore` using the `Array.prototype.some()` method.
+3. If `isIgnoredDirectory` is `true`, the current directory is skipped and not searched. If it is `false`, the script proceeds with the recursive search by calling `searchDirectory` on the directory.
+4. The rest of the script remains the same.
+
+Remember to replace `'/path/to/directory'` with the actual path to the directory you want to search, and `'your search string'` with the string you want to search for.
