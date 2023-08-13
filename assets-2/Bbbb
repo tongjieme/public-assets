@@ -1,1 +1,15 @@
-await connection.execute(`ALTER SESSION SET TIME_ZONE = 'Europe/London'`);
+function useCustomHook() {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    // Perform side effects or subscriptions here
+    document.title = `Count: ${count}`;
+  }, [count]);
+
+  // Return any values or functions that you want to expose from the hook
+  return {
+    count,
+    increment: () => setCount(count + 1),
+    decrement: () => setCount(count - 1),
+  };
+}
