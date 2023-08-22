@@ -1,1 +1,17 @@
-.format('YYYY-MM-DD HH:mm:ss');
+func RetryOperation(operation func() error, maxRetries int) error {
+	var err error
+
+	for retries := 0; retries < maxRetries; retries++ {
+		err = operation()
+
+		if err == nil {
+			return nil // Operation succeeded, no error
+		}
+
+		// Operation failed, retry after a delay
+		fmt.Printf("Operation failed. Retrying in 1 second. Retry %d/%d\n", retries+1, maxRetries)
+		time.Sleep(1 * time.Second)
+	}
+
+	return err // Max retries exceeded, return the last error encountered
+}
