@@ -1,3 +1,16 @@
+public class StackTraceExample {
+    public static void main(String[] args) {
+        printCallStack();
+    }
+
+    private static void printCallStack() {
+        StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+        for (StackTraceElement element : stackTrace) {
+            System.out.println(element.toString());
+        }
+    }
+}
+
 func RetryOperation(operation func() error, maxRetries int) error {
 	var err error
 
