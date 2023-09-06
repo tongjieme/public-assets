@@ -1,18 +1,20 @@
-useReactCacheQuery.jsx
-
 import {useState} from "react";
 import LS from "../utils/LS.js";
+import UseReactCacheQuery from "../Comp/UseReactCacheQuery.jsx";
 
-export default function (storeName = "CACHE_TEXTAREA_TEMP", style = {}) {
-    let [CurrentValue, setCurrentValue] = useState(LS.get(storeName, ""));
+export default function (){
+    let _JSON = UseReactCacheQuery("JSON_PLACEHOLDER", function () {
+        return fetch('https://jsonplaceholder.typicode.com/todos/1')
+            .then(response => response.json())
+    }, 10)
+    return <>
+        {
+            JSON.stringify(_JSON.CurrentValue)
+        }
+        {
+            _JSON.Loading && <span>Loading</span>
+        }
 
-    let component = <textarea name="" id="" cols="30" rows="10" value={CurrentValue} style={style} onChange={e => {
-        setCurrentValue(e.target.value)
-        LS.set(storeName, e.target.value)
-    }}></textarea>
-
-    return {
-        CurrentValue,
-        component
-    }
+        <div onClick={e => _JSON.reload()}>Home</div>
+    </>
 }
