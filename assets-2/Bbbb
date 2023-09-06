@@ -1,20 +1,49 @@
-import {useState} from "react";
+useReactCacheQuery.jsx
+
+
+import {useEffect, useState} from "react";
 import LS from "../utils/LS.js";
-import UseReactCacheQuery from "../Comp/UseReactCacheQuery.jsx";
 
-export default function (){
-    let _JSON = UseReactCacheQuery("JSON_PLACEHOLDER", function () {
-        return fetch('https://jsonplaceholder.typicode.com/todos/1')
-            .then(response => response.json())
-    }, 10)
-    return <>
-        {
-            JSON.stringify(_JSON.CurrentValue)
-        }
-        {
-            _JSON.Loading && <span>Loading</span>
-        }
+function getSecondsDiff(date1, date2) {
+    const diffInMilliseconds = Math.abs(date2 - date1);
+    return Math.floor(diffInMilliseconds / 1000);
+}
 
-        <div onClick={e => _JSON.reload()}>Home</div>
-    </>
+export default function (storeName = "CACHE_QUERY_TEMP", func = () => new Promise(v => v("")), timeout = 60){
+    let valueFromStore = LS.get(storeName, {loadedTime: new Date().toString(), data: "_INITIAL"});
+    let [CurrentValue, setCurrentValue] = useState(valueFromStore.data);
+    let [Loading, setLoading] = useState(false);
+
+    const reload = async function (){
+        let newVar2 = LS.get(storeName, {loadedTime: new Date().toString(), data: "_INITIAL"});
+        let secondsDiff = getSecondsDiff(new Date(newVar2.loadedTime), new Date());
+
+        if("_INITIAL" === newVar2.data || secondsDiff > timeout) {
+
+            await forceLoad()
+        }
+    }
+    const forceLoad = async function() {
+        setLoading(true)
+        try {
+            let newVar = await func();
+            let s = {
+                loadedTime: new Date().toString(),
+                data: newVar
+            }
+            setCurrentValue(newVar)
+            LS.set(storeName, s)
+        } catch (e) {
+
+        }
+        setLoading(false)
+    }
+    useEffect(() => {
+        reload()
+    }, [])
+    return {
+        CurrentValue,
+        reload: forceLoad,
+        Loading
+    }
 }
