@@ -1,113 +1,18 @@
-package utils
+useReactCacheQuery.jsx
 
-import (
-	"github.com/go-rod/rod"
-	"github.com/go-rod/rod/lib/launcher"
-	"os"
-)
+import {useState} from "react";
+import LS from "../utils/LS.js";
 
-func GetBrowser() *rod.Browser {
-	myLauncher := launcher.New()
-	myLauncher.Headless(true)
-	u := myLauncher.Bin(os.Getenv("browser")).MustLaunch()
-	return rod.New().ControlURL(u).MustConnect().NoDefaultDevice()
-}
+export default function (storeName = "CACHE_TEXTAREA_TEMP", style = {}) {
+    let [CurrentValue, setCurrentValue] = useState(LS.get(storeName, ""));
 
+    let component = <textarea name="" id="" cols="30" rows="10" value={CurrentValue} style={style} onChange={e => {
+        setCurrentValue(e.target.value)
+        LS.set(storeName, e.target.value)
+    }}></textarea>
 
-
-
-
-
-package main
-
-import (
-	"fmt"
-	"github.com/go-rod/rod/lib/proto"
-	rodUtils "github.com/go-rod/rod/lib/utils"
-	"go-chrome/utils"
-	"time"
-)
-
-func main() {
-	utils.LoadEnv()
-	browser := utils.GetBrowser()
-	page := browser.MustPage()
-	page.MustSetWindow(0, 0, 1900, 1000)
-
-	time.Sleep(2 * time.Second)
-
-	page.MustNavigate("https://github.com/go-rod/rod")
-	page.WaitEvent(&proto.PageLoadEventFired{})()
-
-	val := page.MustEval(`(aa) => document.title + aa`, "prefix ").Str()
-	fmt.Println(val)
-
-	for _, e := range page.MustElements("[aria-labelledby=\"files\"] .js-navigation-item [role=\"rowheader\"]") {
-		fmt.Println(e.MustText())
-	}
-	page.MustElementR("a", "Documentation").MustClick()
-	page.WaitEvent(&proto.PageLoadEventFired{})()
-
-	page.MustNavigate("https://www.bing.com/?FORM=Z9FD1")
-	page.WaitEvent(&proto.PageLoadEventFired{})()
-
-	page.MustNavigate("https://www.baidu.com/")
-	page.WaitEvent(&proto.PageLoadEventFired{})()
-
-	page.MustNavigate("https://www.bing.com/?FORM=Z9FD1")
-	page.WaitEvent(&proto.PageLoadEventFired{})()
-
-	//page.MustSearch("#id_sc").MustClick()
-	//time.Sleep(20 * time.Second)
-	page.MustWaitLoad().MustScreenshot("a.png")
-
-	img, _ := page.Screenshot(true, &proto.PageCaptureScreenshot{
-		Format:  proto.PageCaptureScreenshotFormatJpeg,
-		Quality: 90,
-		Clip: &proto.PageViewport{
-			X:      0,
-			Y:      0,
-			Width:  500,
-			Height: 300,
-			Scale:  1,
-		},
-		FromSurface: true,
-	})
-	_ = rodUtils.OutputFile("my.jpg", img)
-}
-
-
-
-
-
-
-public class StackTraceExample {
-    public static void main(String[] args) {
-        printCallStack();
+    return {
+        CurrentValue,
+        component
     }
-
-    private static void printCallStack() {
-        StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
-        for (StackTraceElement element : stackTrace) {
-            System.out.println(element.toString());
-        }
-    }
-}
-
-func RetryOperation(operation func() error, maxRetries int) error {
-	var err error
-
-	for retries := 0; retries < maxRetries; retries++ {
-		err = operation()
-
-		if err == nil {
-			return nil // Operation succeeded, no error
-		}
-
-		// Operation failed, retry after a delay
-		fmt.Printf("Operation failed. Retrying in 1 second. Retry %d/%d\n", retries+1, maxRetries)
-		time.Sleep(1 * time.Second)
-	}
-
-	return err // Max retries exceeded, return the last error encountered
 }
