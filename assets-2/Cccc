@@ -1,64 +1,56 @@
-To use React Query in a React application, you can follow these steps:
+package main
 
-1. Install React Query package by running the following command in your project directory:
-npm install react-query
-2. Import the necessary components and hooks from the react-query package in your component file:
-import { useQuery, useMutation } from 'react-query';
-3. Define your API endpoints or functions that will fetch data from your server. For example:
-const fetchTodos = async () => {
-     const response = await fetch('/api/todos');
-     return response.json();
-   };
-4. Use the  `useQuery`  hook to fetch data from the server and handle the loading, error, and success states. For example:
-const Todos = () => {
-     const { data, isLoading, isError } = useQuery('todos', fetchTodos);
-   
-     if (isLoading) {
-       return <div>Loading...</div>;
-     }
-   
-     if (isError) {
-       return <div>Error fetching todos</div>;
-     }
-   
-     return (
-       <ul>
-         {data.map(todo => (
-           <li key={todo.id}>{todo.title}</li>
-         ))}
-       </ul>
-     );
-   };
-5. You can also use the  `useMutation`  hook to handle mutations (e.g., creating, updating, or deleting data) with React Query. For example:
-const createTodo = async (newTodo) => {
-     const response = await fetch('/api/todos', {
-       method: 'POST',
-       headers: {
-         'Content-Type': 'application/json',
-       },
-       body: JSON.stringify(newTodo),
-     });
-   
-     return response.json();
-   };
-   
-   const TodoForm = () => {
-     const mutation = useMutation(createTodo);
-   
-     const handleSubmit = (event) => {
-       event.preventDefault();
-       const newTodo = {
-         title: event.target.elements.title.value,
-         // other fields
-       };
-       mutation.mutate(newTodo);
-     };
-   
-     return (
-       <form onSubmit={handleSubmit}>
-         <input type="text" name="title" />
-         <button type="submit">Add Todo</button>
-       </form>
-     );
-   };
-These are just basic examples to get you started with React Query. You can explore the React Query documentation for more advanced usage and features.
+import (
+	"context"
+	"fmt"
+	"log"
+	"time"
+
+	"github.com/go-rod/rod"
+	"github.com/go-rod/rod/lib/proto"
+)
+
+func main() {
+	// Launch a new browser instance
+	browser := rod.New().MustConnect()
+
+	// Enable request interception
+	page := browser.MustPage()
+	err := page.EnableRequestInterception()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Register the BeforeRequest event handler
+	_ = page.EachEvent(func(e *proto.TargetInterceptedRequest) {
+		// Extract the request headers
+		headers := e.Request.Headers
+
+		// Print the headers
+		fmt.Println("Request Headers:")
+		for key, value := range headers {
+			fmt.Printf("%s: %s\n", key, value)
+		}
+
+		// Continue the request
+		err := e.Continue()
+		if err != nil {
+			log.Fatal(err)
+		}
+	})
+
+	// Navigate to a webpage
+	err = page.Navigate("https://example.com")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Wait for a few seconds for the request interception to occur
+	time.Sleep(5 * time.Second)
+
+	// Close the browser
+	err = browser.Close()
+	if err != nil {
+		log.Fatal(err)
+	}
+}
