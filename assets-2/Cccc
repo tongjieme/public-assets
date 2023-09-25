@@ -1,56 +1,21 @@
-package main
+@PostMapping("/saveRequestBody")
+public ResponseEntity<String> saveRequestBody(HttpServletRequest request) throws IOException {
+    StringBuilder requestBody = new StringBuilder();
+    try (BufferedReader reader = request.getReader()) {
+        String line;
+        while ((line = reader.readLine()) != null) {
+            requestBody.append(line);
+        }
+    }
+    String requestBodyString = requestBody.toString();
 
-import (
-	"context"
-	"fmt"
-	"log"
-	"time"
+    // Specify the file path where you want to save the request body
+    String filePath = "/path/to/file.txt";
 
-	"github.com/go-rod/rod"
-	"github.com/go-rod/rod/lib/proto"
-)
+    try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath))) {
+        writer.write(requestBodyString);
+    }
 
-func main() {
-	// Launch a new browser instance
-	browser := rod.New().MustConnect()
-
-	// Enable request interception
-	page := browser.MustPage()
-	err := page.EnableRequestInterception()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// Register the BeforeRequest event handler
-	_ = page.EachEvent(func(e *proto.TargetInterceptedRequest) {
-		// Extract the request headers
-		headers := e.Request.Headers
-
-		// Print the headers
-		fmt.Println("Request Headers:")
-		for key, value := range headers {
-			fmt.Printf("%s: %s\n", key, value)
-		}
-
-		// Continue the request
-		err := e.Continue()
-		if err != nil {
-			log.Fatal(err)
-		}
-	})
-
-	// Navigate to a webpage
-	err = page.Navigate("https://example.com")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// Wait for a few seconds for the request interception to occur
-	time.Sleep(5 * time.Second)
-
-	// Close the browser
-	err = browser.Close()
-	if err != nil {
-		log.Fatal(err)
-	}
+    // Return a response indicating the successful file write
+    return ResponseEntity.ok("Request body saved successfully.");
 }
