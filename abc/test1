@@ -1,1 +1,50 @@
-my new file contents
+import org.springframework.http.client.ClientHttpRequestFactory;
+import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
+import org.springframework.web.client.RestTemplate;
+
+import javax.net.ssl.*;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
+import java.security.cert.X509Certificate;
+
+public class SSLIgnoreRestTemplate {
+
+    public static RestTemplate createRestTemplate() throws NoSuchAlgorithmException, KeyManagementException {
+        // Create a custom SSL context that trusts all certificates
+        SSLContext sslContext = SSLContext.getInstance("TLS");
+        sslContext.init(null, getTrustManagerArray(), null);
+
+        // Create a custom request factory with the custom SSL context
+        ClientHttpRequestFactory requestFactory = new HttpComponentsClientHttpRequestFactory(HttpClients.custom()
+                .setSSLContext(sslContext)
+                .setSSLHostnameVerifier(NoopHostnameVerifier.INSTANCE)
+                .build());
+
+        // Create the RestTemplate with the custom request factory
+        return new RestTemplate(requestFactory);
+    }
+
+    private static TrustManager[] getTrustManagerArray() {
+        // Create a trust manager that trusts all certificates
+        return new TrustManager[]{
+                new X509TrustManager() {
+                    public X509Certificate[] getAcceptedIssuers() {
+                        return null;
+                    }
+
+                    public void checkClientTrusted(X509Certificate[] certs, String authType) {
+                    }
+
+                    public void checkServerTrusted(X509Certificate[] certs, String authType) {
+                    }
+                }
+        };
+    }
+
+    public static void main(String[] args) throws NoSuchAlgorithmException, KeyManagementException {
+        RestTemplate restTemplate = createRestTemplate();
+
+        // Use the restTemplate for your API requests
+        // ...
+    }
+}
