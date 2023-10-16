@@ -1,21 +1,20 @@
-@PostMapping("/saveRequestBody")
-public ResponseEntity<String> saveRequestBody(HttpServletRequest request) throws IOException {
-    StringBuilder requestBody = new StringBuilder();
-    try (BufferedReader reader = request.getReader()) {
-        String line;
-        while ((line = reader.readLine()) != null) {
-            requestBody.append(line);
-        }
-    }
-    String requestBodyString = requestBody.toString();
+import io.vertx.scala.core.http.HttpServerResponse
+import io.vertx.scala.ext.web.{Router, RoutingContext}
+import io.vertx.scala.core.json.JsonObject
 
-    // Specify the file path where you want to save the request body
-    String filePath = "/path/to/file.txt";
+// Create a Vert.x router
+val router = Router.router(vertx)
 
-    try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath))) {
-        writer.write(requestBodyString);
-    }
+// Define a route that returns a JSON response
+router.get("/api/data").handler { routingContext: RoutingContext =>
+  // Create a JSON object
+  val jsonObject = new JsonObject()
+  jsonObject.put("message", "Hello, JSON!")
 
-    // Return a response indicating the successful file write
-    return ResponseEntity.ok("Request body saved successfully.");
+  // Get the HTTP server response
+  val response: HttpServerResponse = routingContext.response()
+
+  // Set the JSON object as the response body
+  response.putHeader("Content-Type", "application/json")
+  response.end(jsonObject.encode())
 }
