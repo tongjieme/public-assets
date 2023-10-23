@@ -1,24 +1,17 @@
-In Scala, you can obtain JVM heap memory information and other memory-related details using the `java.lang.management` package. Here's an example of how to retrieve the JVM heap used and total space:
+{
+    headerName: 'Number',
+    field: 'number',
+    valueFormatter: (params) => {
+      // Format number with comma thousand separators
+      return params.value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    },
+  },
 
-```scala
-import java.lang.management.ManagementFactory
-import scala.collection.JavaConverters._
 
-// Get the memory MXBean
-val memoryMXBean = ManagementFactory.getMemoryMXBean
-
-// Get the memory usage
-val heapMemoryUsage = memoryMXBean.getHeapMemoryUsage
-
-// Retrieve the used and total heap space
-val usedHeapSpace = heapMemoryUsage.getUsed
-val totalHeapSpace = heapMemoryUsage.getMax
-
-// Print the results
-println(s"Used heap space: $usedHeapSpace bytes")
-println(s"Total heap space: $totalHeapSpace bytes")
-```
-
-In the above code, `ManagementFactory.getMemoryMXBean` retrieves the MemoryMXBean, which provides information about the memory usage of the JVM. The `getHeapMemoryUsage` method returns an instance of `MemoryUsage`, which contains details about the heap memory usage, including the used (`getUsed`) and total (`getMax`) space.
-
-You can also explore other memory-related information using the `MemoryMXBean` and other relevant MXBeans from the `java.lang.management` package. For example, you can obtain non-heap memory usage with `getNonHeapMemoryUsage` and information about memory pools using `ManagementFactory.getMemoryPoolMXBeans`.
+export function commify(n) {
+    var parts = n.toString().split(".");
+    const numberPart = parts[0];
+    const decimalPart = parts[1];
+    const thousands = /\B(?=(\d{3})+(?!\d))/g;
+    return numberPart.replace(thousands, ",") + (decimalPart ? "." + decimalPart : "");
+}
