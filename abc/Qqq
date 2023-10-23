@@ -1,17 +1,11 @@
-{
-    headerName: 'Number',
-    field: 'number',
-    valueFormatter: (params) => {
-      // Format number with comma thousand separators
-      return params.value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-    },
-  },
+String url = "https://example.com/api/endpoint";
+String jsonPayload = "{\"key\": \"value\"}";
 
+HttpHeaders headers = new HttpHeaders();
+headers.setContentType(MediaType.APPLICATION_JSON);
 
-export function commify(n) {
-    var parts = n.toString().split(".");
-    const numberPart = parts[0];
-    const decimalPart = parts[1];
-    const thousands = /\B(?=(\d{3})+(?!\d))/g;
-    return numberPart.replace(thousands, ",") + (decimalPart ? "." + decimalPart : "");
-}
+HttpEntity<String> requestEntity = new HttpEntity<>(jsonPayload, headers);
+
+ResponseEntity<String> responseEntity = restTemplate.exchange(url, HttpMethod.POST, requestEntity, String.class);
+
+String response = responseEntity.getBody();
