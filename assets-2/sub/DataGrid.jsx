@@ -1,8 +1,11 @@
-
-export function commify(n, decimalLength = 0) {
-    const parts = n.toFixed(decimalLength).toString().split(".");
-    const numberPart = parts[0];
-    const decimalPart = parts[1];
-    const thousands = /\B(?=(\d{3})+(?!\d))/g;
-    return numberPart.replace(thousands, ",") + (decimalPart ? "." + decimalPart : "");
-}
+if (gridRef.current.api) {
+                        let columns = gridRef.current.api.getColumnDefs();
+                        let _columnsDefs = columns.map(colDef => {
+                            if (colDef.field === field){
+                                colDef.valueFormatter = formaterComify
+                                colDef.type = "rightAligned"
+                            }
+                            return colDef
+                        });
+                        setColumnDefs(_columnsDefs)
+                    }
