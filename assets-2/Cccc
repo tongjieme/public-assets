@@ -1,21 +1,61 @@
-import com.opencsv.CSVReader;
-import java.io.FileReader;
-import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class Main {
     public static void main(String[] args) {
-        String filePath = "path/to/file.csv";
+        Iterable<Person> iterable1 = Arrays.asList(
+                new Person("John", 30),
+                new Person("Alice", 25)
+        );
 
-        try (CSVReader reader = new CSVReader(new FileReader(filePath))) {
-            String[] nextLine;
-            while ((nextLine = reader.readNext()) != null) {
-                for (String value : nextLine) {
-                    System.out.print(value + " ");
-                }
-                System.out.println();
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
+        Iterable<Person> iterable2 = Arrays.asList(
+                new Person("Bob", 35),
+                new Person("Emily", 28)
+        );
+
+        Iterable<Person> combinedIterable = combineIterables(iterable1, iterable2);
+
+        // Iterate and print the combined iterable
+        for (Person person : combinedIterable) {
+            System.out.println(person.getName() + " - " + person.getAge());
         }
+    }
+
+    public static Iterable<Person> combineIterables(Iterable<Person> iterable1, Iterable<Person> iterable2) {
+        // Convert iterables to streams, concatenate them, and collect as a list
+        List<Person> combinedList = Stream.concat(
+                streamOf(iterable1),
+                streamOf(iterable2)
+        ).collect(Collectors.toList());
+
+        // Return the combined list as an iterable
+        return combinedList;
+    }
+
+    public static <T> Stream<T> streamOf(Iterable<T> iterable) {
+        // Convert iterable to stream
+        return StreamSupport.stream(iterable.spliterator(), false);
+    }
+}
+
+class Person {
+    private String name;
+    private int age;
+
+    public Person(String name, int age) {
+        this.name = name;
+        this.age = age;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public int getAge() {
+        return age;
     }
 }
