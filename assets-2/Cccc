@@ -1,3 +1,56 @@
+import com.opencsv.CSVReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+public class Main {
+    public static void main(String[] args) {
+        String filePath = "path/to/file.csv";
+        List<Map<String, String>> keyValueList = readCSVAsKeyValueMaps(filePath);
+        
+        // Print the key-value maps
+        for (Map<String, String> keyValueMap : keyValueList) {
+            for (Map.Entry<String, String> entry : keyValueMap.entrySet()) {
+                System.out.println(entry.getKey() + ": " + entry.getValue());
+            }
+            System.out.println();
+        }
+    }
+    
+    public static List<Map<String, String>> readCSVAsKeyValueMaps(String filePath) {
+        List<Map<String, String>> keyValueList = new ArrayList<>();
+        
+        try (CSVReader reader = new CSVReader(new FileReader(filePath))) {
+            List<String[]> csvLines = reader.readAll();
+            
+            // Get the header line to use as keys
+            String[] headerLine = csvLines.get(0);
+            
+            // Iterate over the remaining lines
+            for (int i = 1; i < csvLines.size(); i++) {
+                String[] lineValues = csvLines.get(i);
+                Map<String, String> keyValueMap = new HashMap<>();
+                
+                // Assign values to keys in the map
+                for (int j = 0; j < headerLine.length; j++) {
+                    keyValueMap.put(headerLine[j], lineValues[j]);
+                }
+                
+                keyValueList.add(keyValueMap);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        
+        return keyValueList;
+    }
+}
+
+=====
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
