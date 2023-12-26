@@ -1,3 +1,20 @@
+func appendToFile(filename string, content string) error {
+	// Open the file in append mode, create it if it doesn't exist
+	file, err := os.OpenFile(filename, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	// Append the content to the file
+	if _, err := file.WriteString(content); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+
 // Get the current date
 	currentTime := time.Now()
 
