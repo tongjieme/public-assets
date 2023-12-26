@@ -1,71 +1,15 @@
-func getLastNonEmptyLine(filename string) (string, error) {
-	file, err := os.Open(filename)
-	if err != nil {
-		return "", err
-	}
-	defer file.Close()
+import React from 'react';
 
-	scanner := bufio.NewScanner(file)
-	var lastNonEmptyLine string
+const CustomHeader = ({ column }) => {
+  const headerName = column.getColDef().headerName;
+  const lowercasePart = headerName.substring(headerName.indexOf('(') + 1, headerName.indexOf(')')).toLowerCase();
+  const transformedHeaderName = headerName.replace(headerName.substring(headerName.indexOf('(') + 1, headerName.indexOf(')')), lowercasePart);
 
-	for scanner.Scan() {
-		line := scanner.Text()
-		if line != "" {
-			lastNonEmptyLine = line
-		}
-	}
+  return <div>{transformedHeaderName}</div>;
+};
 
-	if err := scanner.Err(); err != nil {
-		return "", err
-	}
-
-	return lastNonEmptyLine, nil
-}
-
-
-func appendToFile(filename string, content string) error {
-	// Open the file in append mode, create it if it doesn't exist
-	file, err := os.OpenFile(filename, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	// Append the content to the file
-	if _, err := file.WriteString(content); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-
-// Get the current date
-	currentTime := time.Now()
-
-	// Format the date as "yyyy-mm-dd"
-	dateString := currentTime.Format("2006-01-02")
-
-	fmt.Println(dateString) // Output: 2023-10-19
+export default CustomHeader;
 
 
 
-func getLastBusinessDay() string {
-	// Get today's date
-	today := time.Now()
-
-	// Subtract one day from today's date
-	previousDay := today.AddDate(0, 0, -1)
-
-	// Check if the previous day is a weekend (Saturday or Sunday)
-	if previousDay.Weekday() == time.Saturday {
-		previousDay = previousDay.AddDate(0, 0, -1)
-	} else if previousDay.Weekday() == time.Sunday {
-		previousDay = previousDay.AddDate(0, 0, -2)
-	}
-
-	// Format the previous day as "yyyy-mm-dd"
-	dateString := previousDay.Format("2006-01-02")
-
-	return dateString
-}
+headerComponentFramework: CustomHeader
