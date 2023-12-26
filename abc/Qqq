@@ -1,3 +1,28 @@
+func getLastNonEmptyLine(filename string) (string, error) {
+	file, err := os.Open(filename)
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	var lastNonEmptyLine string
+
+	for scanner.Scan() {
+		line := scanner.Text()
+		if line != "" {
+			lastNonEmptyLine = line
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		return "", err
+	}
+
+	return lastNonEmptyLine, nil
+}
+
+
 func appendToFile(filename string, content string) error {
 	// Open the file in append mode, create it if it doesn't exist
 	file, err := os.OpenFile(filename, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
