@@ -1,15 +1,9 @@
-import React from 'react';
+const LowercaseHeader = (props) => {
+  const { displayName } = props.column.getColDef();
+  const lowercaseName = displayName.toLowerCase();
 
-const CustomHeader = ({ column }) => {
-  const headerName = column.getColDef().headerName;
-  const lowercasePart = headerName.substring(headerName.indexOf('(') + 1, headerName.indexOf(')')).toLowerCase();
-  const transformedHeaderName = headerName.replace(headerName.substring(headerName.indexOf('(') + 1, headerName.indexOf(')')), lowercasePart);
-
-  return <div>{transformedHeaderName}</div>;
+  return <AgGridColumnHeader {...props} displayName={lowercaseName} />;
 };
-
-export default CustomHeader;
-
 
 
 headerComponentFramework: CustomHeader
