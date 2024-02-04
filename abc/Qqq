@@ -1,1 +1,211 @@
-=IF(ISNA(VLOOKUP(B2, A:A, 1, FALSE)), "Y", "N")
+import UploadReader from "../Comp/UploadReader.jsx";
+import {Col, Row, Checkbox, Select} from "antd";
+import DataGrid from "../Comp/DataGrid.jsx";
+import {useEffect, useState} from "react";
+import _ from "lodash";
+import Papapaser from "papaparse";
+
+export default function (){
+    // let dataA = [{key: "1", a: "a", b: "b", c: 1},{key: "3", a: "A", b: "B", c: 2}]
+    // let dataB = [{key: "1", a: "A", b: "b", c: 2},{key: "2", a: "A", b: "B", c: 2}]
+    let [DataA, setDataA] = useState([]);
+    let [DataB, setDataB] = useState([]);
+    return <div>
+        <Row gutter={10}>
+            <Col span={12}>
+                <UploadReader onContent={s => {
+                    let parse1 = Papapaser.parse(s, {
+                        header: true,
+                        dynamicTyping: true,
+                    });
+                    setDataA(parse1.data)
+                }}></UploadReader>
+            </Col>
+            <Col span={12}>
+                <UploadReader onContent={s => {
+                    let parse1 = Papapaser.parse(s, {
+                        header: true,
+                        dynamicTyping: true,
+                    });
+                    setDataB(parse1.data)
+                }}></UploadReader>
+            </Col>
+        </Row>
+
+        <CompareGridCore
+            dataA={DataA}
+            dataB={DataB}
+            ignoreFields={['Country', 'Athlete', 'Year', 'Sport']}
+            identifier={(a,b) => {
+                return a.Country === b.Country && a.Athlete === b.Athlete && a.Sport === b.Sport&& a.Year === b.Year
+            }}
+        ></CompareGridCore>
+    </div>
+}
+
+function CompareGridCore({dataA,dataB, identifier, ignoreFields}) {
+    dataA = dataA || [{a: ""}]
+    dataB = dataB || [{a: ""}]
+    identifier = identifier || function (){}
+    ignoreFields = ignoreFields || []
+    let [Fields, setFields] = useState([]);
+    let [IdentifierKeys, setIdentifierKeys] = useState([]);
+
+    let [CompareResult, setCompareResult] = useState([]);
+
+    let [Data, setData] = useState([]);
+
+
+    let IdentifierKeysSelector =
+        <Select
+            mode="multiple"
+            allowClear
+            style={{
+                width: '100%',
+            }}
+            placeholder="Please select"
+            defaultValue={[]}
+            onChange={(e) => {
+                setIdentifierKeys(e)
+                console.log(e)
+            }}
+            options={Fields.map(e => {
+                return {
+                    label: e,
+                    value: e
+                }
+            })}
+        />
+
+    useEffect(() => {
+        let a = dataA[0] || {};
+        let b = dataB[0] || {};
+
+        let fields = _.uniq([...Object.keys(a), ...Object.keys(b)])
+        setFields(fields)
+        // console.log("fields:", fields)
+        let dataResult = []
+        let realIdentifier = IdentifierKeys && IdentifierKeys.length ? (a,b) => {
+            let sameId = true
+            IdentifierKeys.map(key => {
+                if(a[key] !== b[key]) {
+                    sameId = false
+                }
+            })
+            return sameId
+        } :  identifier;
+
+        dataA.map(itemA => {
+            let itemResult = {}
+            let itemB = _.find(dataB, itemB => realIdentifier(itemA, itemB));
+            let identical = true
+            fields.map(f => {
+                itemResult[f] = {
+                    a: itemA[f],
+                    b: itemB ? itemB[f] : undefined
+                }
+                if(!itemB) {
+                    identical = false
+                }
+                if(itemB && itemA[f] !== itemB[f]) {
+                    identical = false
+                }
+            })
+            itemResult['__META'] = {a: true, b: !!itemB,identical}
+
+            dataResult.push(itemResult)
+
+        })
+        dataB.map(CurrentItem => {
+            let foundIndex = _.findIndex(dataA, item => realIdentifier(item,CurrentItem));
+            if(foundIndex === -1) {
+                let itemResult = {}
+
+                fields.map(f => {
+                    itemResult[f] = {
+                        a: undefined,
+                        b: CurrentItem[f]
+                    }
+                })
+                itemResult['__META'] = {a: false, b: true, identical: false}
+                dataResult.push(itemResult)
+            }
+        })
+
+        console.log(dataResult)
+        setCompareResult(dataResult)
+    }, [dataA, dataB, IdentifierKeys])
+    return <div>
+        {IdentifierKeysSelector} <br/>
+        <CompareResultGrid dataResult={CompareResult}></CompareResultGrid>
+    </div>
+}
+function CompareResultGrid({dataResult}) {
+    let _dataResult = dataResult || []
+    let [Data, setData] = useState([]);
+    let [ColumDefs, setColumnDefs] = useState([])
+    let [DiffOnly, setDiffOnly] = useState(false);
+    let [DeltaValue, setDeltaValue] = useState(false);
+
+    const handleAbDiff = function (a,b){
+        if(a === b) {
+            return {
+                content: a,
+                identical: true
+            }
+        }
+        return {
+            content: DeltaValue ? a -b : `${a} - ${b}`,
+            identical: false
+        }
+    }
+    useEffect(() => {
+        if(!dataResult[0]) {
+            return;
+        }
+        let fields = Object.keys(dataResult[0]).filter(field => !field.startsWith('__'))
+        let cols = []
+        fields.map(f => {
+            cols.push({
+                field: f,
+                cellRenderer: function (params) {
+                    let res = handleAbDiff(params.value.a,params.value.b);
+
+                    return res.identical ? res.content : <div style={{background: "red", color: "white"}}>
+                        {res.content}
+                    </div>
+                },
+                valueFormatter: function (params) {
+                    // console.log(params)
+                    return handleAbDiff(params.value.a,params.value.b).content
+                }
+            })
+        })
+        setColumnDefs(cols)
+    }, [dataResult, DeltaValue])
+    return <div>
+        <Checkbox onChange={e => setDiffOnly(e.target.checked)} checked={DiffOnly}>Diff only</Checkbox>
+        <Checkbox onChange={e => setDeltaValue(e.target.checked)} checked={DeltaValue}>Show Delta Value</Checkbox>
+
+
+
+
+        <DataGrid
+            data={_dataResult.map(f => {
+                return {...f};
+            }).filter(f => {
+                if(DiffOnly && f.__META) {
+                    return !f.__META.identical
+                }
+                return true
+            }).map(f => {
+                delete f.__META
+                return f
+            })}
+            columnDefs={ColumDefs}
+        >
+        </DataGrid>
+
+    </div>
+}
+
