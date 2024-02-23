@@ -1,211 +1,447 @@
-import UploadReader from "../Comp/UploadReader.jsx";
-import {Col, Row, Checkbox, Select} from "antd";
-import DataGrid from "../Comp/DataGrid.jsx";
-import {useEffect, useState} from "react";
-import _ from "lodash";
-import Papapaser from "papaparse";
+import React, {useCallback, useEffect, useMemo, useRef, useState} from "react";
+import {AgGridReact} from "ag-grid-react";
 
-export default function (){
-    // let dataA = [{key: "1", a: "a", b: "b", c: 1},{key: "3", a: "A", b: "B", c: 2}]
-    // let dataB = [{key: "1", a: "A", b: "b", c: 2},{key: "2", a: "A", b: "B", c: 2}]
-    let [DataA, setDataA] = useState([]);
-    let [DataB, setDataB] = useState([]);
-    return <div>
-        <Row gutter={10}>
-            <Col span={12}>
-                <UploadReader onContent={s => {
-                    let parse1 = Papapaser.parse(s, {
-                        header: true,
-                        dynamicTyping: true,
-                    });
-                    setDataA(parse1.data)
-                }}></UploadReader>
-            </Col>
-            <Col span={12}>
-                <UploadReader onContent={s => {
-                    let parse1 = Papapaser.parse(s, {
-                        header: true,
-                        dynamicTyping: true,
-                    });
-                    setDataB(parse1.data)
-                }}></UploadReader>
-            </Col>
-        </Row>
+import 'ag-grid-enterprise';
+import 'ag-grid-community/styles/ag-grid.css'; // Core grid CSS, always needed
+import 'ag-grid-community/styles/ag-theme-balham.css';
+import LS from "../utils/LS.js";
+import {Select, Button, Space, theme, Checkbox, Col, Row, Modal, Input} from "antd";
+import {commify} from "../utils/utils.js";
+import _ from "lodash"
 
-        <CompareGridCore
-            dataA={DataA}
-            dataB={DataB}
-            ignoreFields={['Country', 'Athlete', 'Year', 'Sport']}
-            identifier={(a,b) => {
-                return a.Country === b.Country && a.Athlete === b.Athlete && a.Sport === b.Sport&& a.Year === b.Year
-            }}
-        ></CompareGridCore>
-    </div>
-}
+/**
+ *
+ * @param data
+ * @param defaultColDef
+ * @param columnDefs
+ * @param id
+ * @param agOption ag-grid option {}
+ * @param groups [{headerName: "", children: [{ field: 'athlete' }]}]
+ * @param ColumnDescObj
+ * @returns {JSX.Element}
+ */
+export default function ({data,defaultColDef,columnDefs, id, agOption, groups, ColumnDescObj}) {
+    defaultColDef = defaultColDef || {}
+    agOption = agOption || {}
+    groups = groups || []
+    let _columnDefs = columnDefs || []
+    let _ColumnDescObj = ColumnDescObj || {value: "", setter: () => {}, isDummy: true}
+    const gridRef = useRef(); // Optional - for accessing Grid's API
+    const [rowData, setRowData] = useState(); // Set rowData to Array of Objects, one Object per Row
+    const [Lowercase, setLowerCase] = useState(true);
+    const [ColumnDefs, setColumnDefs] = useState([]);
+    const [ColOverrides, setColOverrides] = useState([])
 
-function CompareGridCore({dataA,dataB, identifier, ignoreFields}) {
-    dataA = dataA || [{a: ""}]
-    dataB = dataB || [{a: ""}]
-    identifier = identifier || function (){}
-    ignoreFields = ignoreFields || []
-    let [Fields, setFields] = useState([]);
-    let [IdentifierKeys, setIdentifierKeys] = useState([]);
+    const [AddDescFieldName, setAddDescFieldName] = useState("");
+    const [AddDescFieldNDesc, setAddDescFieldDesc] = useState("");
+    const [ShowDescBrowser, setShowDescBrowser] = useState(false);
 
-    let [CompareResult, setCompareResult] = useState([]);
-
-    let [Data, setData] = useState([]);
-
-
-    let IdentifierKeysSelector =
-        <Select
-            mode="multiple"
-            allowClear
-            style={{
-                width: '100%',
-            }}
-            placeholder="Please select"
-            defaultValue={[]}
-            onChange={(e) => {
-                setIdentifierKeys(e)
-                console.log(e)
-            }}
-            options={Fields.map(e => {
-                return {
-                    label: e,
-                    value: e
-                }
-            })}
-        />
-
+    const [DescObj, setDescObj] = useState({})
     useEffect(() => {
-        let a = dataA[0] || {};
-        let b = dataB[0] || {};
+        try {
+            let parse = JSON.parse(_ColumnDescObj.value);
+            setDescObj(parse)
+        } catch (e) {
 
-        let fields = _.uniq([...Object.keys(a), ...Object.keys(b)])
-        setFields(fields)
-        // console.log("fields:", fields)
-        let dataResult = []
-        let realIdentifier = IdentifierKeys && IdentifierKeys.length ? (a,b) => {
-            let sameId = true
-            IdentifierKeys.map(key => {
-                if(a[key] !== b[key]) {
-                    sameId = false
+        }
+    }, [_ColumnDescObj.value])
+
+
+
+    const sideBar = useMemo(() => {
+        return {
+            toolPanels: [
+                {
+                    id: 'columns',
+                    labelDefault: 'Columns',
+                    labelKey: 'columns',
+                    iconKey: 'columns',
+                    toolPanel: 'agColumnsToolPanel',
+                    minWidth: 225,
+                    maxWidth: 225,
+                    width: 225
+                },
+                {
+                    id: 'filters',
+                    labelDefault: 'Filters',
+                    labelKey: 'filters',
+                    iconKey: 'filter',
+                    toolPanel: 'agFiltersToolPanel',
+                    minWidth: 180,
+                    maxWidth: 400,
+                    width: 250
                 }
-            })
-            return sameId
-        } :  identifier;
+            ],
+            position: 'right',
+            // defaultToolPanel: 'columns',
+            // hiddenByDefault: false
+        };
+    }, []);
 
-        dataA.map(itemA => {
-            let itemResult = {}
-            let itemB = _.find(dataB, itemB => realIdentifier(itemA, itemB));
-            let identical = true
-            fields.map(f => {
-                itemResult[f] = {
-                    a: itemA[f],
-                    b: itemB ? itemB[f] : undefined
+    // Each Column Definition results in one Column.
+
+    // DefaultColDef sets props common to all Columns
+    const _defaultColDef = useMemo( ()=> {
+        let DescObj = {};
+        if(_ColumnDescObj.value) {
+            try {
+                DescObj = JSON.parse(_ColumnDescObj.value);
+            } catch (e) {
+
+            }
+        }
+
+        return {
+            sortable: true,
+            filter: true,
+            resizable: true,
+            headerValueGetter: Lowercase ? ({column}) => {
+                let fieldName = column.getColDef().field + "";
+                if(DescObj[fieldName]) {
+                    return fieldName.toLowerCase() + "*";
                 }
-                if(!itemB) {
-                    identical = false
-                }
-                if(itemB && itemA[f] !== itemB[f]) {
-                    identical = false
-                }
-            })
-            itemResult['__META'] = {a: true, b: !!itemB,identical}
+                return fieldName.toLowerCase();
+            } : undefined,
+            ...defaultColDef
+        }
+    }, [Lowercase, _ColumnDescObj.value]);
 
-            dataResult.push(itemResult)
 
-        })
-        dataB.map(CurrentItem => {
-            let foundIndex = _.findIndex(dataA, item => realIdentifier(item,CurrentItem));
-            if(foundIndex === -1) {
-                let itemResult = {}
 
-                fields.map(f => {
-                    itemResult[f] = {
-                        a: undefined,
-                        b: CurrentItem[f]
+    // Example load data from server
+    useEffect(() => {
+        let columns = [{a: ""}]
+        let newColumns = []
+        if(data.length) {
+            columns = Object.keys(data[0]).map(ColumnName => {
+
+                let columnDefOption = {};
+
+                _columnDefs.map(c => {
+                    if(ColumnName === c.field) {
+                        columnDefOption = c;
                     }
                 })
-                itemResult['__META'] = {a: false, b: true, identical: false}
-                dataResult.push(itemResult)
-            }
-        })
+                ColOverrides.map(c => {
+                    if(ColumnName === c.field) {
+                        columnDefOption = {...columnDefOption, ...c};
+                    }
+                })
+                let col = {
+                    field: ColumnName,
+                    enablePivot: true,
+                    enableRowGroup: true,
+                    ...columnDefOption
+                }
 
-        console.log(dataResult)
-        setCompareResult(dataResult)
-    }, [dataA, dataB, IdentifierKeys])
-    return <div>
-        {IdentifierKeysSelector} <br/>
-        <CompareResultGrid dataResult={CompareResult}></CompareResultGrid>
-    </div>
-}
-function CompareResultGrid({dataResult}) {
-    let _dataResult = dataResult || []
-    let [Data, setData] = useState([]);
-    let [ColumDefs, setColumnDefs] = useState([])
-    let [DiffOnly, setDiffOnly] = useState(false);
-    let [DeltaValue, setDeltaValue] = useState(false);
-
-    const handleAbDiff = function (a,b){
-        if(a === b) {
-            return {
-                content: a,
-                identical: true
-            }
-        }
-        return {
-            content: DeltaValue ? a -b : `${a} - ${b}`,
-            identical: false
-        }
-    }
-    useEffect(() => {
-        if(!dataResult[0]) {
-            return;
-        }
-        let fields = Object.keys(dataResult[0]).filter(field => !field.startsWith('__'))
-        let cols = []
-        fields.map(f => {
-            cols.push({
-                field: f,
-                cellRenderer: function (params) {
-                    let res = handleAbDiff(params.value.a,params.value.b);
-
-                    return res.identical ? res.content : <div style={{background: "red", color: "white"}}>
-                        {res.content}
-                    </div>
-                },
-                valueFormatter: function (params) {
-                    // console.log(params)
-                    return handleAbDiff(params.value.a,params.value.b).content
+                if(typeof data[0][ColumnName] === "number") {
+                    col.enableValue = true
+                    col.filter = 'agNumberColumnFilter'
+                    col.cellStyle = { fontFamily: "Arial, sans-serif" }
+                    col.type = 'rightAligned'
+                }
+                return col
+            })
+            _columnDefs.map(c => {
+                let isNewColumn = true
+                columns.map(col => {
+                    if(col.field === c.field) {
+                        isNewColumn = false
+                    }
+                })
+                if (isNewColumn) {
+                    newColumns.push(c)
                 }
             })
-        })
-        setColumnDefs(cols)
-    }, [dataResult, DeltaValue])
-    return <div>
-        <Checkbox onChange={e => setDiffOnly(e.target.checked)} checked={DiffOnly}>Diff only</Checkbox>
-        <Checkbox onChange={e => setDeltaValue(e.target.checked)} checked={DeltaValue}>Show Delta Value</Checkbox>
+        }
+
+        // groups.map(g => {
+        //     let headerName = g.headerName;
+        //     let children = g.children
+        //     children.map(c => {
+        //         let index = _.findIndex(columnDefs, c => c.field.toLowerCase() === c.field.toLowerCase());
+        //
+        //     })
+        //
+        // })
+
+        setColumnDefs([...columns, ...newColumns])
+        setRowData(data)
+        // applyColumnState()
+    }, [data, ColOverrides, columnDefs]);
+
+    // Example using Grid's API
+    // const buttonListener = useCallback( e => {
+    //     gridRef.current.api.deselectAll();
+    // }, []);
+
+    const statusBar = useMemo(() => {
+        return {
+            statusPanels: [
+                { statusPanel: 'agTotalAndFilteredRowCountComponent', align: 'left' },
+                { statusPanel: 'agTotalRowCountComponent', align: 'center' },
+                { statusPanel: 'agFilteredRowCountComponent' },
+                { statusPanel: 'agSelectedRowCountComponent' },
+                { statusPanel: 'agAggregationComponent' },
+            ],
+        };
+    }, []);
+
+    const CustomCountRenderer = (props) => {
+        const { value } = props;
+        const count = value && value.length;
+
+        return <span> count: {count}</span>
+        // return <span>({count} items)</span>;
+    }
 
 
+    const saveColumnState = function () {
+        if(gridRef.current.columnApi) {
+            console.log("saveColumnState")
+            if(id) {
+                LS.set("GRID_COLUMN_STATE_" + id, gridRef.current.columnApi.getColumnState())
+            }
+        }
+    }
+    const applyColumnState = function () {
+        if(gridRef.current.columnApi) {
+            console.log("applyColumnState")
+            let newVar = LS.get("GRID_COLUMN_STATE_" + id);
+            if(newVar && gridRef.current && gridRef.current.columnApi) {
+                gridRef.current.columnApi.applyColumnState({
+                    state: newVar,
+                    applyOrder: true,
+                })
+            }
+        }
+    }
+
+    const onStateChange = function(event) {
+        // Handle column state change
+        // saveColumnState()
+    }
+
+    const autoGroupColumnDef = useMemo(() => {
+        return {
+            // headerName: 'My Group',
+            // minWidth: 220,
+            pinned: 'left',//force pinned left. Does not work in columnDef
+            resizable: true,
+            cellRendererParams: {
+                suppressCount: true,
+                // cellRendererFramework: CustomCountRenderer, // Custom cell renderer component
+                // checkbox: true,
+            },
+        };
+    }, []);
 
 
-        <DataGrid
-            data={_dataResult.map(f => {
-                return {...f};
-            }).filter(f => {
-                if(DiffOnly && f.__META) {
-                    return !f.__META.identical
-                }
-                return true
-            }).map(f => {
-                delete f.__META
-                return f
-            })}
-            columnDefs={ColumDefs}
-        >
-        </DataGrid>
+    // Example of consuming Grid Event
+    const cellClickedListener = useCallback( event => {
+        console.log('cellClicked', event);
+    }, []);
 
-    </div>
+    const addDesc = function (fieldName, desc){
+        let descObj = {}
+
+        if(_ColumnDescObj.value) {
+            try {
+                descObj = JSON.parse(_ColumnDescObj.value)
+            } catch (e) {
+
+            }
+        }
+
+        descObj[fieldName] = desc;
+
+        _ColumnDescObj.setter(JSON.stringify(descObj))
+    }
+
+
+    const onGridReady = function () {
+        // applyColumnState()
+    }
+    const { token } = theme.useToken();
+
+
+    const getMainMenuItems = function (params) {
+        let field = params.column.getId();
+        console.log(field, params)
+
+
+        return [
+            ...params.defaultItems,
+            {
+                name: 'Joe Abercrombie',
+                action: () => {
+                    console.log('He wrote a book');
+                },
+                icon: '<img src="https://www.ag-grid.com/example-assets/lab.png" style="width: 14px;" />',
+            },
+            {
+                name: 'Format to xxx,xxx.00',
+                action: () => {
+                    if (gridRef.current.api) {
+                        let columns = gridRef.current.api.getColumnDefs();
+                        let _columnsDefs = columns.map(colDef => {
+                            if (colDef.field === field){
+                                colDef.valueFormatter = formaterComify
+                                colDef.type = "rightAligned"
+                                colDef.valueGetter = getIfNumber(field)
+                                colDef.filter = "agNumberColumnFilter"
+                                colDef.cellStyle = { fontFamily: "Arial, sans-serif" }
+                            }
+                            return colDef
+                        });
+                        setColumnDefs(_columnsDefs)
+                    }
+                    // console.log('He wrote a book');
+                },
+                icon: '<img src="https://www.ag-grid.com/example-assets/lab.png" style="width: 14px;" />',
+            },
+            {
+                name: 'Reset Format',
+                action: () => {
+                    let newColumnsDefs = [...ColumnDefs]
+                    newColumnsDefs.push({
+                        field: field,
+                        valueFormatter: params => params.value,
+                        // type: 'leftAligned'
+                    })
+
+                    setColOverrides(newColumnsDefs)
+                },
+                icon: '<img src="https://www.ag-grid.com/example-assets/lab.png" style="width: 14px;" />',
+            },
+            {
+                name: 'Show Description',
+                action: () => {
+                    if (gridRef.current.api && !_ColumnDescObj.isDummy) {
+                        console.log(field)
+                        // addDesc(field, "TEST")
+                        // setShowAddDesc(true)
+                        setAddDescFieldName(field)
+                        setShowDescBrowser(true)
+                        setAddDescFieldDesc(DescObj[field])
+                    }
+                },
+                icon: '<img src="https://www.ag-grid.com/example-assets/lab.png" style="width: 14px;" />',
+            },
+        ]
+        // return params.defaultItems;
+    }
+    const topConlumn = function (field){
+        if(gridRef.current.columnApi) {
+            gridRef.current.columnApi.moveColumns([field], 0)
+        }
+    }
+    const ensureColumnVisible = function (field){
+        if(gridRef.current.api) {
+            gridRef.current.api.ensureColumnVisible(field, 'end')
+        }
+    }
+    const filterOption = (input, option) =>
+        (option?.label ?? '').toLowerCase().includes(input.toLowerCase());
+    return (
+        <div>
+
+            {/* Example using Grid's API */}
+            {/*<button onClick={buttonListener}>Push Me</button>*/}
+
+            {/* On div wrapping Grid a) specify theme CSS Class Class and b) sets Grid size */}
+
+            <Row gutter={10}>
+                <Col span={6}>
+                    <Select style={{width: "100%"}} showSearch options={ColumnDefs.map(c => {
+                        return {
+                            value: c.field,
+                            label: Lowercase ? (c.field + "").toLowerCase() : c.field,
+                        }
+                    })} filterOption={filterOption} onChange={topConlumn}></Select>
+                </Col>
+                <Col span={6}>
+                    <Select style={{width: "100%"}} showSearch options={ColumnDefs.map(c => {
+                        return {
+                            value: c.field,
+                            label: Lowercase ? (c.field + "").toLowerCase() : c.field,
+                        }
+                    })} filterOption={filterOption} onChange={ensureColumnVisible}></Select>
+                </Col>
+                <Col span={6}><Checkbox checked={Lowercase} onChange={e =>{setLowerCase(e.target.checked)} }>Lowercase</Checkbox></Col>
+            </Row>
+
+            <div className="ag-theme-balham" style={{width: "100%", height: "90vh"}} key={JSON.stringify(columnDefs)}>
+
+                {/*<Space style={{paddingBottom: token.paddingXS}}>*/}
+                {/*    <Button type="primary" onClick={saveColumnState}>Save</Button>*/}
+                {/*    <Button onClick={applyColumnState}>apply</Button>*/}
+                {/*</Space>*/}
+
+
+                <AgGridReact
+                    ref={gridRef} // Ref for accessing Grid's API
+
+                    rowData={rowData} // Row Data for Rows
+                    enableRangeSelection={true}
+                    statusBar={statusBar}
+                    sideBar={sideBar}
+                    maintainColumnOrder={true}
+
+                    columnDefs={ColumnDefs} // Column Defs for Columns
+                    defaultColDef={_defaultColDef} // Default Column Properties
+
+                    animateRows={true} // Optional - set to 'true' to have rows animate when sorted
+                    rowSelection='multiple' // Options - allows click selection of rows
+                    autoGroupColumnDef={autoGroupColumnDef}
+                    onCellClicked={cellClickedListener} // Optional - registering for Grid Event
+                    groupDefaultExpanded={0}
+                    onColumnMoved={onStateChange}
+                    onFilterChanged={onStateChange}
+                    onSortChanged={onStateChange}
+                    onGridReady={onGridReady}
+                    onRowDataUpdated={applyColumnState}
+                    getMainMenuItems={getMainMenuItems}
+                    {...agOption}
+                />
+            </div>
+            <Modal title={"Desc Browser"} open={ShowDescBrowser} onOk={() =>{
+                addDesc(AddDescFieldName, AddDescFieldNDesc)
+                setShowDescBrowser(false)
+            } } onCancel={() =>{setShowDescBrowser(false)} }>
+                <Select style={{width: "100%"}} showSearch options={Object.keys(DescObj).map(c => {
+                    return {
+                        value: c,
+                        label: Lowercase ? (c + "").toLowerCase() : c,
+                    }
+                })} filterOption={filterOption} onChange={field => {
+                    setAddDescFieldDesc(DescObj[field])
+                    setAddDescFieldName(field)
+                }}></Select>
+                <p>{AddDescFieldName}</p>
+                <Input.TextArea value={AddDescFieldNDesc} onChange={e => {
+                    setAddDescFieldDesc(e.target.value)
+                }}></Input.TextArea>
+            </Modal>
+        </div>
+    );
 }
 
+function formaterComify(params) {
+    return commify(params.value, 2)
+}
+function getIfNumber(FieldName) {
+    return function (params) {
+        if(params.data) {
+            let n = params.data[FieldName]
+            if (typeof n === "string") {
+                let number = parseFloat(n)
+                if (!isNaN(number)) {
+                    n = number
+                }
+            }
+            return n
+        }
+        return undefined
+    }
+}
