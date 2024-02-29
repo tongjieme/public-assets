@@ -1,9 +1,30 @@
-public static String convertDateFormat(String dateStr) {
-        DateTimeFormatter inputFormatter = DateTimeFormatter.ofPattern("yyyy/M/dd");
-        DateTimeFormatter outputFormatter = DateTimeFormatter.ofPattern("yyyyMMdd");
+{
+                name: 'Format to xxM',
+                action: () => {
+                    if (gridRef.current.api) {
+                        let columns = gridRef.current.api.getColumnDefs();
+                        let _columnsDefs = columns.map(colDef => {
+                            if (colDef.field === field){
+                                colDef.valueFormatter = numToMillion
+                                colDef.type = "rightAligned"
+                                colDef.valueGetter = getIfNumber(field)
+                                colDef.filter = "agNumberColumnFilter"
+                                colDef.cellStyle = { fontFamily: "Arial, sans-serif" }
+                            }
+                            return colDef
+                        });
+                        setColumnDefs(_columnsDefs)
+                    }
+                    // console.log('He wrote a book');
+                },
+                icon: '<img src="https://www.ag-grid.com/example-assets/lab.png" style="width: 14px;" />',
+            },
 
-        LocalDate date = LocalDate.parse(dateStr, inputFormatter);
-        String convertedDateStr = date.format(outputFormatter);
 
-        return convertedDateStr;
+
+function numToMillion(num) {
+    if (num === null || isNaN(Number(num))) {
+        return "-";
     }
+    return Math.round(num / 1000000) + "M";
+}
