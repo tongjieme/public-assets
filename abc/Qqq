@@ -1,22 +1,11 @@
-import {useEffect, useState} from "react";
-import {GetCacheByKey, SetCacheByKey} from "../utils/clients.js";
-
-export default function ({key}){
-    let [KeyValue, setKeyValue] = useState("");
-
-    useEffect(() => {
-        GetCacheByKey(key, function (value){
-            setKeyValue(value)
-        });
-    }, [])
-
-    const setValue = async function (value){
-        await SetCacheByKey(key,value)
-        setKeyValue(value)
-    }
-
-    return {
-        KeyValue,
-        setValue
+function isTimePassed(timeString) {
+    const now = moment();
+    const comparisonTime = moment(timeString, 'HH:mm');
+  
+    if (now.isAfter(comparisonTime)) {
+        return true;
+    } 
+    else {
+        return false; 
     }
 }
