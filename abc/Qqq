@@ -1,11 +1,4 @@
-function isTimePassed(timeString) {
-    const now = moment();
-    const comparisonTime = moment(timeString, 'HH:mm');
-  
-    if (now.isAfter(comparisonTime)) {
-        return true;
-    } 
-    else {
-        return false; 
-    }
-}
+SELECT atc.table_name, atc.column_name, atc.data_type
+FROM all_tab_columns atc
+WHERE atc.owner = 'YOUR_SCHEMA'
+ORDER BY atc.table_name, atc.column_id;
