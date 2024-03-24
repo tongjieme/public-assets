@@ -1,39 +1,46 @@
-import {Tldraw, useEditor} from 'tldraw'
-import 'tldraw/tldraw.css'
-import { getAssetUrls } from '@tldraw/assets/selfHosted'
+import { flowPlugin, esbuildFlowPlugin } from '@bunchtogether/vite-plugin-flow';
 
-const assetUrls = getAssetUrls({baseUrl: "/assets"})
-import {useEffect, useState} from "react";
-import useCacheSqlite from "../Comp/UseCacheSqlite.jsx";
+import { resolve } from 'path'
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
 
-export default function (){
+// https://vitejs.dev/config/
+export default defineConfig({
+  build: {
+    rollupOptions: {
+      input: {
+        main: resolve(__dirname, 'index.html'),
+        nested: resolve(__dirname, 'nested/index.html'),
+      },
+    },
+  },
+  server: {
+    host: true,
+    proxy: {
+      '/api': "http://127.0.0.1:9090",
+    },
+  },
+  define: {
+    "process.env.IS_PREACT": JSON.stringify("true"),
+  },
+  optimizeDeps: {
+    esbuildOptions: {
+      plugins: [esbuildFlowPlugin()]
+    }
+  },
+  plugins: [ flowPlugin(), react()],
+})
 
-    return <Draw mykey={'my-persistence-key'}></Draw>
-}
 
-function Draw({mykey}) {
-    const [MyEditor, setMyEditor] = useState(null)
-    const [Inited, setInited] = useState(false)
-    let useCacheSqlite1 = useCacheSqlite({key: `tldraw_${mykey}`});
 
-    useEffect(function (){
-        if(MyEditor && useCacheSqlite1.KeyValue && !Inited) {
-            setInited(true, function (){
-                MyEditor.store.loadSnapshot(JSON.parse(useCacheSqlite1.KeyValue))
-            })
-        }
-    }, [Inited, useCacheSqlite1.KeyValue])
-    return <div>
-        <button disabled={useCacheSqlite1.Loading} onClick={() => {
-            const snapshot = MyEditor.store.getSnapshot()
-            useCacheSqlite1.setValue(JSON.stringify(snapshot))
-        }}>Save</button>
-        {/*https://tldraw.dev/docs/persistence*/}
-        <div style={{height: "80vh"}}>
-            <Tldraw assetUrls={assetUrls} persistenceKey={mykey} onMount={(editor) => {
-                setMyEditor(editor)
-            }} />
-        </div>
 
-    </div>
-}
+
+
+
+
+
+"dev": "vite",
+    "build": "vite build",
+    "build-cdn": "vite build --base=https://xiaohai-1255682077.cos.ap-guangzhou.myqcloud.com/ag-grid/",
+    "lint": "eslint src --ext js,jsx --report-unused-disable-directives --max-warnings 0",
+    "preview": "vite preview"
