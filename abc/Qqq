@@ -1,4 +1,39 @@
-SELECT atc.table_name, atc.column_name, atc.data_type
-FROM all_tab_columns atc
-WHERE atc.owner = 'YOUR_SCHEMA'
-ORDER BY atc.table_name, atc.column_id;
+import {Tldraw, useEditor} from 'tldraw'
+import 'tldraw/tldraw.css'
+import { getAssetUrls } from '@tldraw/assets/selfHosted'
+
+const assetUrls = getAssetUrls({baseUrl: "/assets"})
+import {useEffect, useState} from "react";
+import useCacheSqlite from "../Comp/UseCacheSqlite.jsx";
+
+export default function (){
+
+    return <Draw mykey={'my-persistence-key'}></Draw>
+}
+
+function Draw({mykey}) {
+    const [MyEditor, setMyEditor] = useState(null)
+    const [Inited, setInited] = useState(false)
+    let useCacheSqlite1 = useCacheSqlite({key: `tldraw_${mykey}`});
+
+    useEffect(function (){
+        if(MyEditor && useCacheSqlite1.KeyValue && !Inited) {
+            setInited(true, function (){
+                MyEditor.store.loadSnapshot(JSON.parse(useCacheSqlite1.KeyValue))
+            })
+        }
+    }, [Inited, useCacheSqlite1.KeyValue])
+    return <div>
+        <button disabled={useCacheSqlite1.Loading} onClick={() => {
+            const snapshot = MyEditor.store.getSnapshot()
+            useCacheSqlite1.setValue(JSON.stringify(snapshot))
+        }}>Save</button>
+        {/*https://tldraw.dev/docs/persistence*/}
+        <div style={{height: "80vh"}}>
+            <Tldraw assetUrls={assetUrls} persistenceKey={mykey} onMount={(editor) => {
+                setMyEditor(editor)
+            }} />
+        </div>
+
+    </div>
+}
