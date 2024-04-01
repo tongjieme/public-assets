@@ -1,46 +1,55 @@
-import { flowPlugin, esbuildFlowPlugin } from '@bunchtogether/vite-plugin-flow';
+const fs = require('fs');
+const path = require('path');
 
-import { resolve } from 'path'
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
+// Define the directory path of the Spring Boot project
+const projectDirectory = '/path/to/spring/boot/project';
 
-// https://vitejs.dev/config/
-export default defineConfig({
-  build: {
-    rollupOptions: {
-      input: {
-        main: resolve(__dirname, 'index.html'),
-        nested: resolve(__dirname, 'nested/index.html'),
-      },
-    },
-  },
-  server: {
-    host: true,
-    proxy: {
-      '/api': "http://127.0.0.1:9090",
-    },
-  },
-  define: {
-    "process.env.IS_PREACT": JSON.stringify("true"),
-  },
-  optimizeDeps: {
-    esbuildOptions: {
-      plugins: [esbuildFlowPlugin()]
+// Define the directory where web controllers are located
+const controllersDirectory = path.join(projectDirectory, 'src/main/java/com/example/controllers');
+
+// Function to recursively scan a directory for Java files
+function scanDirectory(directoryPath, fileList = []) {
+  const files = fs.readdirSync(directoryPath);
+
+  files.forEach((file) => {
+    const filePath = path.join(directoryPath, file);
+    const stat = fs.statSync(filePath);
+
+    if (stat.isDirectory()) {
+      scanDirectory(filePath, fileList);
+    } else if (path.extname(file) === '.java') {
+      fileList.push(filePath);
     }
-  },
-  plugins: [ flowPlugin(), react()],
-})
+  });
 
+  return fileList;
+}
 
+// Function to extract URLs from Java files
+function extractUrlsFromJavaFiles(javaFiles) {
+  const urlRegex = /@RequestMapping\("(.+?)"\)/g;
+  const urls = [];
 
+  javaFiles.forEach((file) => {
+    const fileContent = fs.readFileSync(file, 'utf8');
+    let match;
 
+    while ((match = urlRegex.exec(fileContent)) !== null) {
+      urls.push(match[1]);
+    }
+  });
 
+  return urls;
+}
 
+// Scan the controllers directory for Java files
+const javaFiles = scanDirectory(controllersDirectory);
 
+// Extract URLs from Java files
+const urls = extractUrlsFromJavaFiles(javaFiles);
 
-
-"dev": "vite",
-    "build": "vite build",
-    "build-cdn": "vite build --base=https://xiaohai-1255682077.cos.ap-guangzhou.myqcloud.com/ag-grid/",
-    "lint": "eslint src --ext js,jsx --report-unused-disable-directives --max-warnings 0",
-    "preview": "vite preview"
+// Output the results
+console.log('Web Controller URLs:');
+urls.forEach((url) => {
+  console.log(url);
+});
