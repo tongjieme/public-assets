@@ -35,3 +35,21 @@ console.log('Web Controller URLs:');
 urls.forEach((url) => {
     console.log(url);
 });
+
+
+
+function extractClassLevelUrls(javaFiles) {
+    const classLevelRegex = /@RequestMapping\((?:path\s*=\s*)?"(.+?)"\)\s*public\s*class/g;
+    const urls = [];
+
+    javaFiles.forEach((file) => {
+        const fileContent = fs.readFileSync(file, 'utf8');
+        let match;
+
+        while ((match = classLevelRegex.exec(fileContent)) !== null) {
+            urls.push(`@RequestMapping ${match[1]}`);
+        }
+    });
+
+    return urls;
+}
