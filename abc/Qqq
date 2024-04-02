@@ -22,24 +22,25 @@ function scanDirectory(directoryPath, fileList = []) {
 }
 
 function extractUrlsFromJavaFiles(javaFiles) {
-  const urlRegexes = [
-    /@RequestMapping\("(.+?)"\)/g,
-    /@GetMapping\("(.+?)"\)/g,
-    /@PostMapping\("(.+?)"\)/g,
-    /@PutMapping\("(.+?)"\)/g,
-    /@DeleteMapping\("(.+?)"\)/g,
-    /@PatchMapping\("(.+?)"\)/g
+  const annotationRegexes = [
+    { name: '@RequestMapping', regex: /@RequestMapping\("(.+?)"\)/g },
+    { name: '@GetMapping', regex: /@GetMapping\("(.+?)"\)/g },
+    { name: '@PostMapping', regex: /@PostMapping\("(.+?)"\)/g },
+    { name: '@PutMapping', regex: /@PutMapping\("(.+?)"\)/g },
+    { name: '@DeleteMapping', regex: /@DeleteMapping\("(.+?)"\)/g },
+    { name: '@PatchMapping', regex: /@PatchMapping\("(.+?)"\)/g },
   ];
+  
   const urls = [];
 
   javaFiles.forEach((file) => {
     const fileContent = fs.readFileSync(file, 'utf8');
 
-    urlRegexes.forEach((urlRegex) => {
+    annotationRegexes.forEach(({ name, regex }) => {
       let match;
 
-      while ((match = urlRegex.exec(fileContent)) !== null) {
-        urls.push(match[1]);
+      while ((match = regex.exec(fileContent)) !== null) {
+        urls.push(`${name} ${match[1]}`);
       }
     });
   });
