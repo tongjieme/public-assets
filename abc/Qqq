@@ -1,13 +1,9 @@
 const fs = require('fs');
 const path = require('path');
 
-// Define the directory path of the Spring Boot project
 const projectDirectory = '/path/to/spring/boot/project';
-
-// Define the directory where web controllers are located
 const controllersDirectory = path.join(projectDirectory, 'src/main/java/com/example/controllers');
 
-// Function to recursively scan a directory for Java files
 function scanDirectory(directoryPath, fileList = []) {
   const files = fs.readdirSync(directoryPath);
 
@@ -25,30 +21,34 @@ function scanDirectory(directoryPath, fileList = []) {
   return fileList;
 }
 
-// Function to extract URLs from Java files
 function extractUrlsFromJavaFiles(javaFiles) {
-  const urlRegex = /@RequestMapping\("(.+?)"\)/g;
+  const urlRegexes = [
+    /@RequestMapping\("(.+?)"\)/g,
+    /@GetMapping\("(.+?)"\)/g,
+    /@PostMapping\("(.+?)"\)/g,
+    /@PutMapping\("(.+?)"\)/g,
+    /@DeleteMapping\("(.+?)"\)/g,
+    /@PatchMapping\("(.+?)"\)/g
+  ];
   const urls = [];
 
   javaFiles.forEach((file) => {
     const fileContent = fs.readFileSync(file, 'utf8');
-    let match;
 
-    while ((match = urlRegex.exec(fileContent)) !== null) {
-      urls.push(match[1]);
-    }
+    urlRegexes.forEach((urlRegex) => {
+      let match;
+
+      while ((match = urlRegex.exec(fileContent)) !== null) {
+        urls.push(match[1]);
+      }
+    });
   });
 
   return urls;
 }
 
-// Scan the controllers directory for Java files
 const javaFiles = scanDirectory(controllersDirectory);
-
-// Extract URLs from Java files
 const urls = extractUrlsFromJavaFiles(javaFiles);
-
-// Output the results
 console.log('Web Controller URLs:');
 urls.forEach((url) => {
   console.log(url);
