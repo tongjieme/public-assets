@@ -22,38 +22,46 @@ function scanDirectory(directoryPath, fileList = []) {
 }
 
 function extractUrlsFromJavaFiles(javaFiles) {
-  const annotationRegexes = [
-    {
+    const classLevelAnnotationRegex = /@RequestMapping\((?:path\s*=\s*)?"(.+?)"\)(?:\s*public\s+class\s+\w+)?\s*\{([^}]+)}/g;
+    const methodLevelAnnotationRegexes = [
+        {
             name: '@RequestMapping', 
             regex: /@RequestMapping\((?:path\s*=\s*)?"(.+?)(?:",\s*method\s*=\s*RequestMethod\.(.+?))?\)/g 
         },
-    { name: '@GetMapping', regex: /@GetMapping\("(.+?)"\)/g },
-    { name: '@PostMapping', regex: /@PostMapping\("(.+?)"\)/g },
-    { name: '@PutMapping', regex: /@PutMapping\("(.+?)"\)/g },
-    { name: '@DeleteMapping', regex: /@DeleteMapping\("(.+?)"\)/g },
-    { name: '@PatchMapping', regex: /@PatchMapping\("(.+?)"\)/g },
-  ];
-  
-  const urls = [];
+        { name: '@GetMapping', regex: /@GetMapping\("(.+?)"\)/g },
+        { name: '@PostMapping', regex: /@PostMapping\("(.+?)"\)/g },
+        { name: '@PutMapping', regex: /@PutMapping\("(.+?)"\)/g },
+        { name: '@DeleteMapping', regex: /@DeleteMapping\("(.+?)"\)/g },
+        { name: '@PatchMapping', regex: /@PatchMapping\("(.+?)"\)/g },
+    ];
+
+    const urls = [];
 
     javaFiles.forEach((file) => {
         const fileContent = fs.readFileSync(file, 'utf8');
-        annotationRegexes.forEach(({ name, regex }) => {
-            let match;
-            while ((match = regex.exec(fileContent)) !== null) {
-                const url = match[1];
-                const method = match[2] ? match[2] : 'GET'; // default to 'GET' if not specified
-                urls.push(`${name} [${method}] ${url}`);
-            }
-        });
+        let classMatch;
+        
+        while ((classMatch = classLevelAnnotationRegex.exec(fileContent)) !== null) {
+            const classLevelUrl = classMatch[1];
+            const classBody = classMatch[2];
+
+            methodLevelAnnotationRegexes.forEach(({ name, regex }) => {
+                let methodMatch;
+                while ((methodMatch = regex.exec(classBody)) !== null) {
+                    const url = classLevelUrl + methodMatch[1];
+                    const method = methodMatch[2] ? methodMatch[2] : 'GET'; 
+                    urls.push(`${name} [${method}] ${url}`);
+                }
+            });
+        }
     });
-    
+
     return urls;
 }
 
-const javaFiles = scanDirectory(controllersDirectory);
+const javaFiles = scanDirectory( /*controllersDirectory*/ );
 const urls = extractUrlsFromJavaFiles(javaFiles);
 console.log('Web Controller URLs:');
 urls.forEach((url) => {
-  console.log(url);
+    console.log(url);
 });
