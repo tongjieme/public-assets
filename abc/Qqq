@@ -23,7 +23,10 @@ function scanDirectory(directoryPath, fileList = []) {
 
 function extractUrlsFromJavaFiles(javaFiles) {
   const annotationRegexes = [
-    { name: '@RequestMapping', regex: /@RequestMapping\((?:path\s*=\s*)?"(.+?)"/g },
+    {
+            name: '@RequestMapping', 
+            regex: /@RequestMapping\((?:path\s*=\s*)?"(.+?)(?:",\s*method\s*=\s*RequestMethod\.(.+?))?\)/g 
+        },
     { name: '@GetMapping', regex: /@GetMapping\("(.+?)"\)/g },
     { name: '@PostMapping', regex: /@PostMapping\("(.+?)"\)/g },
     { name: '@PutMapping', regex: /@PutMapping\("(.+?)"\)/g },
@@ -33,19 +36,19 @@ function extractUrlsFromJavaFiles(javaFiles) {
   
   const urls = [];
 
-  javaFiles.forEach((file) => {
-    const fileContent = fs.readFileSync(file, 'utf8');
-
-    annotationRegexes.forEach(({ name, regex }) => {
-      let match;
-
-      while ((match = regex.exec(fileContent)) !== null) {
-        urls.push(`${name} ${match[1]}`);
-      }
+    javaFiles.forEach((file) => {
+        const fileContent = fs.readFileSync(file, 'utf8');
+        annotationRegexes.forEach(({ name, regex }) => {
+            let match;
+            while ((match = regex.exec(fileContent)) !== null) {
+                const url = match[1];
+                const method = match[2] ? match[2] : 'GET'; // default to 'GET' if not specified
+                urls.push(`${name} [${method}] ${url}`);
+            }
+        });
     });
-  });
-
-  return urls;
+    
+    return urls;
 }
 
 const javaFiles = scanDirectory(controllersDirectory);
