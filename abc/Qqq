@@ -1,20 +1,42 @@
-let isShiftDoubleClicked = false;
-let firstClickTime = 0;
+import org.aspectj.lang.ProceedingJoinPoint;
+import org.aspectj.lang.annotation.Around;
+import org.aspectj.lang.annotation.Aspect;
+import org.aspectj.lang.annotation.Pointcut;
+import org.springframework.stereotype.Service;
 
-document.addEventListener('keydown', function(event) {
-    if (event.key === "Shift") {
-        if(isShiftDoubleClicked === false) {
-            isShiftDoubleClicked = true;
-            firstClickTime = new Date().getTime();
-            setTimeout(function() {
-                isFirstClick = false;
-            }, 200); // Event within 200 milliseconds is considered as double click
-        } else {
-            let secondClickTime = new Date().getTime();
-            if(secondClickTime - firstClickTime <= 200) {
-                console.log("Shift key was double-clicked");
-                isShiftDoubleClicked = false;
-            }
-        }
+@Service
+@Aspect
+public class LogExecutionTimeAspect {
+
+    @Pointcut("@annotation(LogExecutionTime)")
+    public void trackTimeMethod() {
     }
-});
+
+    @Around("trackTimeMethod()&& @annotation(logExecutionTime)")
+    public Object around(ProceedingJoinPoint joinPoint, LogExecutionTime logExecutionTime) throws Throwable {
+
+        long start = System.currentTimeMillis();
+
+        Object proceed = joinPoint.proceed();
+
+        long executionTime = System.currentTimeMillis() - start;
+
+        System.out.println("Method [" + joinPoint.getSignature() + "] executed in " + executionTime + "ms");
+
+        System.out.println("Supplied name: " + logExecutionTime.name());
+
+        return proceed;
+    }
+}
+
+
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
+@Target(ElementType.METHOD)
+@Retention(RetentionPolicy.RUNTIME)
+public @interface LogExecutionTime {
+    String name() default "";
+}
