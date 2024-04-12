@@ -1,50 +1,26 @@
-import org.aspectj.lang.ProceedingJoinPoint;
-import org.aspectj.lang.annotation.Around;
-import org.aspectj.lang.annotation.Aspect;
-import org.aspectj.lang.annotation.Pointcut;
-import org.springframework.stereotype.Service;
+const fs = require('fs');
+const path = require('path');
 
-@Service
-@Aspect
-public class LogExecutionTimeAspect {
+function searchStringInDirectory(dir, searchString) {
+    fs.readdirSync(dir).forEach(file => { 
+        let fullPath = path.join(dir, file);
 
-    @Pointcut("@annotation(LogExecutionTime)")
-    public void trackTimeMethod() {
-    }
-
-    @Around("trackTimeMethod()&& @annotation(logExecutionTime)")
-    public Object around(ProceedingJoinPoint joinPoint, LogExecutionTime logExecutionTime) throws Throwable {
-
-        long start = System.currentTimeMillis();
-
-        Object proceed = joinPoint.proceed();
-
-        long executionTime = System.currentTimeMillis() - start;
-
-        System.out.println("Method [" + joinPoint.getSignature() + "] executed in " + executionTime + "ms");
-
-        System.out.println("Supplied name: " + logExecutionTime.name());
-
-        return proceed;
-    }
+        if (fs.statSync(fullPath).isDirectory()) {
+            searchStringInDirectory(fullPath, searchString);
+        } else if (fs.statSync(fullPath).isFile() && fullPath.endsWith(".txt")) {
+            fs.readFile(fullPath, 'utf8', function(err, data) {
+                if (err) throw err;
+                let lines = data.split('\n');
+                lines.forEach((line, i) => {
+                    if (line.includes(searchString)) {
+                        console.log(`${fullPath} - line ${i + 1}`);
+                    }
+                });
+            });
+        }
+    });
 }
 
-
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
-
-@Target(ElementType.METHOD)
-@Retention(RetentionPolicy.RUNTIME)
-public @interface LogExecutionTime {
-    String name() default "";
-}
-
-
-
-
-
-
-
-@LogExecutionTime(name = "get")
+const folderPath = '/path/to/your/folder';
+const searchString = 'your string';
+searchStringInDirectory(folderPath, searchString);
