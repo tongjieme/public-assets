@@ -1,25 +1,26 @@
-const fs = require('fs');
+const fs = require('fs').promises;
 const path = require('path');
 
-function searchStringInDirectory(dir, searchString) {
-    fs.readdirSync(dir).forEach(file => { 
-        let fullPath = path.join(dir, file);
+async function searchStringInDirectory(dir, searchString) {
+    const files = await fs.readdir(dir);
 
-        if (fs.statSync(fullPath).isDirectory()) {
-            searchStringInDirectory(fullPath, searchString);
-        } else if (fs.statSync(fullPath).isFile() && fullPath.endsWith(".txt")) {
-            fs.readFile(fullPath, 'utf8', function(err, data) {
-                if (err) throw err;
-                let lines = data.split('\n');
-                lines.forEach((line, i) => {
-                    if (line.includes(searchString)) {
-                        console.log(`${fullPath} - line ${i + 1}`);
-                    }
-                });
+    for (const file of files) {
+        const fullPath = path.join(dir, file);
+        const stat = await fs.stat(fullPath);
+
+        if (stat.isDirectory()) {
+            await searchStringInDirectory(fullPath, searchString);
+        } else if (stat.isFile() && fullPath.endsWith(".txt")) {
+            const data = await fs.readFile(fullPath, 'utf8');
+            const lines = data.split('\n');
+            lines.forEach((line, i) => {
+                if (line.includes(searchString)) {
+                    console.log(`${fullPath} - line ${i + 1}`);
+                }
             });
-        }
-    });
-}
+        };
+    };
+};
 
 const folderPath = '/path/to/your/folder';
 const searchString = 'your string';
