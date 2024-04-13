@@ -1,33 +1,13 @@
-const fs = require('fs');
-const path = require('path');
+const yaml = require('js-yaml');
+const fs   = require('fs');
 
-function findYmlFiles (directoryPath) {
-   // Read the content of the directory
-   fs.readdir(directoryPath, function (err, files) {
-      if (err) {
-         return console.error('Unable to scan directory: ' + err);
-      }
+try {
+  const file1 = yaml.safeLoad(fs.readFileSync('/path/to/firstFile.yml', 'utf8'));
+  const file2 = yaml.safeLoad(fs.readFileSync('/path/to/secondFile.yml', 'utf8'));
 
-      // Iterate through all files
-      files.forEach(function (file) {
-         let filePath = path.join(directoryPath, file);
+  const merged = Object.assign({}, file1, file2);
 
-         // Check file stats
-         fs.stat(filePath, function (err, stats) {
-            if (err) return console.error(err);
-
-            if (stats.isDirectory()) {
-               // If it's an directory, lookup files in this directory
-               findYmlFiles(filePath);
-            } else if (path.extname(file) === '.yml') {
-               // If it's a file, and this file is a .yml file, print it's absolute path
-               console.log(filePath);
-            }
-         });
-
-      });
-   });
+  console.log(merged);
+} catch(e) {
+  console.error(e)
 }
-
-// Change './' with path to your directory
-findYmlFiles('./');
