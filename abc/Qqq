@@ -1,23 +1,8 @@
-const fs = require('fs').promises;
-const path = require('path');
-
-async function getYmlFiles(dir) {
-    let fileList = [];
-    let files = await fs.readdir(dir);
-    for(let file of files) {
-        const filePath = path.join(dir, file);
-        const stat = await fs.stat(filePath);
-        if(stat.isDirectory()) {
-            fileList = fileList.concat(await getYmlFiles(filePath));
-        } else {
-            if(path.extname(file) === '.yml'){
-                fileList.push(filePath);
-            }
-        }
+async function getYmlFilesFromDirs(dirList) {
+    let allFiles = [];
+    for(let dir of dirList) {
+        const files = await getYmlFiles(dir);
+        allFiles = allFiles.concat(files);
     }
-    return fileList;
+    return allFiles;
 }
-
-getYmlFiles('your_directory_path_here')
-    .then(files => console.log(files))
-    .catch(e => console.error(e));
