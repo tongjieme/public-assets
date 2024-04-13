@@ -1,13 +1,23 @@
-const yaml = require('js-yaml');
-const fs   = require('fs');
+const fs = require('fs').promises;
+const path = require('path');
 
-try {
-  const file1 = yaml.safeLoad(fs.readFileSync('/path/to/firstFile.yml', 'utf8'));
-  const file2 = yaml.safeLoad(fs.readFileSync('/path/to/secondFile.yml', 'utf8'));
-
-  const merged = Object.assign({}, file1, file2);
-
-  console.log(merged);
-} catch(e) {
-  console.error(e)
+async function getYmlFiles(dir) {
+    let fileList = [];
+    let files = await fs.readdir(dir);
+    for(let file of files) {
+        const filePath = path.join(dir, file);
+        const stat = await fs.stat(filePath);
+        if(stat.isDirectory()) {
+            fileList = fileList.concat(await getYmlFiles(filePath));
+        } else {
+            if(path.extname(file) === '.yml'){
+                fileList.push(filePath);
+            }
+        }
+    }
+    return fileList;
 }
+
+getYmlFiles('your_directory_path_here')
+    .then(files => console.log(files))
+    .catch(e => console.error(e));
