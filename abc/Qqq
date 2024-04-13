@@ -1,13 +1,33 @@
-const fg = require('fast-glob');
+const fs = require('fs');
+const path = require('path');
 
-async function findYmlFiles(pattern) {
-  try {
-    const files = await fg(pattern);
-    console.log(files);
-  } catch (error) {
-    console.error(error);
-  }
+function findYmlFiles (directoryPath) {
+   // Read the content of the directory
+   fs.readdir(directoryPath, function (err, files) {
+      if (err) {
+         return console.error('Unable to scan directory: ' + err);
+      }
+
+      // Iterate through all files
+      files.forEach(function (file) {
+         let filePath = path.join(directoryPath, file);
+
+         // Check file stats
+         fs.stat(filePath, function (err, stats) {
+            if (err) return console.error(err);
+
+            if (stats.isDirectory()) {
+               // If it's an directory, lookup files in this directory
+               findYmlFiles(filePath);
+            } else if (path.extname(file) === '.yml') {
+               // If it's a file, and this file is a .yml file, print it's absolute path
+               console.log(filePath);
+            }
+         });
+
+      });
+   });
 }
 
-// Call the function, replace './**/*.yml' with your custom directory path
-findYmlFiles('./**/*.yml');
+// Change './' with path to your directory
+findYmlFiles('./');
