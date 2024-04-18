@@ -1,0 +1,65 @@
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.ser.PropertyWriter;
+import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
+import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
+
+public class Main {
+    public static void main(String[] args) throws Exception {
+        ObjectMapper objectMapper = new ObjectMapper();
+
+        // Exclude fields starting with "delta" during serialization
+        MyFilterProvider filterProvider = new MyFilterProvider();
+        filterProvider.addFilter("deltaFilter", new DeltaPropertyFilter());
+        objectMapper.setFilterProvider(filterProvider);
+
+        // Convert object to JSON
+        MyObject obj = new MyObject();
+        obj.setName("John");
+        obj.setAge(30);
+        obj.setDeltaValue(42);
+        obj.setDeltaField("Exclude me");
+        obj.setAddress("123 Street");
+
+        String json = objectMapper.writeValueAsString(obj);
+        System.out.println(json);
+        // Output: {"name":"John","age":30,"address":"123 Street"}
+    }
+}
+
+class MyObject {
+    private String name;
+    private int age;
+    private int deltaValue;
+    private String deltaField;
+    private String address;
+
+    // Getters and setters
+
+    // ...
+}
+
+// Custom filter implementation
+class DeltaPropertyFilter extends SimpleBeanPropertyFilter {
+    @Override
+    public void serializeAsField(Object pojo, JsonGenerator jgen, SerializerProvider provider, PropertyWriter writer) throws Exception {
+        if (include(writer)) {
+            writer.serializeAsField(pojo, jgen, provider);
+        } else if (!jgen.canOmitFields()) { // If field is being explicitly excluded
+            writer.serializeAsOmittedField(pojo, jgen, provider);
+        }
+    }
+
+    protected boolean include(PropertyWriter writer) {
+        // Exclude fields starting with "delta" during serialization
+        return !writer.getName().startsWith("delta");
+    }
+}
+
+// Custom filter provider
+class MyFilterProvider extends SimpleFilterProvider {
+    public MyFilterProvider() {
+        setDefaultFilter(new DeltaPropertyFilter());
+    }
+}
