@@ -1,65 +1,16 @@
-import com.fasterxml.jackson.annotation.JsonFilter;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
-import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
+function getPreviousWeekday() {
+    var yesterday = moment().subtract(1, 'days');
 
-public class Main {
-    public static void main(String[] args) throws Exception {
-        ObjectMapper objectMapper = new ObjectMapper();
-
-        // Exclude fields starting with "delta" during serialization
-        MyFilterProvider filterProvider = new MyFilterProvider();
-        filterProvider.addFilter("deltaFilter", new DeltaPropertyFilter());
-        objectMapper.setFilterProvider(filterProvider);
-
-        // Convert object to JSON
-        MyObject obj = new MyObject();
-        obj.setName("John");
-        obj.setAge(30);
-        obj.setDeltaValue(42);
-        obj.setDeltaField("Exclude me");
-        obj.setAddress("123 Street");
-
-        String json = objectMapper.writeValueAsString(obj);
-        System.out.println(json);
-        // Output: {"name":"John","age":30,"address":"123 Street"}
-    }
-}
-
-// Annotation to enable custom filter
-@JsonFilter("deltaFilter")
-class MyObject {
-    private String name;
-    private int age;
-    private int deltaValue;
-    private String deltaField;
-    private String address;
-
-    // Getters and setters
-
-    // ...
-}
-
-// Custom filter implementation
-class DeltaPropertyFilter extends SimpleBeanPropertyFilter {
-    @Override
-    public void serializeAsField(Object pojo, JsonGenerator jgen, SerializerProvider provider, PropertyWriter writer) throws Exception {
-        if (include(writer)) {
-            writer.serializeAsField(pojo, jgen, provider);
-        } else if (!jgen.canOmitFields()) { // If field is being explicitly excluded
-            writer.serializeAsOmittedField(pojo, jgen, provider);
-        }
+    // check if yesterday was Sunday (day 0), if so go back additional 2 days to Friday
+    if (yesterday.day() === 0) {
+        yesterday = yesterday.subtract(2, 'days');
+    } 
+    // check if yesterday was Saturday (day 6), if so go back additional 1 day to Friday
+    else if (yesterday.day() === 6) {
+        yesterday = yesterday.subtract(1, 'days');
     }
 
-    protected boolean include(PropertyWriter writer) {
-        // Exclude fields starting with "delta" during serialization
-        return !writer.getName().startsWith("delta");
-    }
+    return yesterday.format('YYYY-MM-DD'); // return date in the format: 'YYYY-MM-DD'
 }
 
-// Custom filter provider
-class MyFilterProvider extends SimpleFilterProvider {
-    public MyFilterProvider() {
-        setDefaultFilter(new DeltaPropertyFilter());
-    }
-}
+console.log(getPreviousWeekday());
