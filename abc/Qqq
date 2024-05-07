@@ -1,32 +1,28 @@
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import springfox.documentation.builders.ApiInfoBuilder;
-import springfox.documentation.builders.PathSelectors;
-import springfox.documentation.builders.RequestHandlerSelectors;
-import springfox.documentation.service.ApiInfo;
-import springfox.documentation.spi.DocumentationType;
-import springfox.documentation.spring.web.plugins.Docket;
-import springfox.documentation.swagger2.annotations.EnableSwagger2;
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLPeerUnverifiedException;
+import java.net.URL;
+import java.security.cert.Certificate;
+import java.security.cert.X509Certificate;
 
-@Configuration
-@EnableSwagger2
-public class SwaggerConfig {
+public class CertificateExpirationDate {
 
-    @Bean
-    public Docket api() {
-        return new Docket(DocumentationType.SWAGGER_2)
-                .select()
-                .apis(RequestHandlerSelectors.basePackage("com.example.controller"))
-                .paths(PathSelectors.any())
-                .build()
-                .apiInfo(apiInfo());
-    }
+    public static void main(String[] args) {
+        String urlString = "https://example.com"; // Replace with your desired URL
 
-    private ApiInfo apiInfo() {
-        return new ApiInfoBuilder()
-                .title("Your API Title")
-                .description("Your API Description")
-                .version("1.0.0")
-                .build();
+        try {
+            URL url = new URL(urlString);
+            HttpsURLConnection connection = (HttpsURLConnection) url.openConnection();
+            connection.connect();
+
+            Certificate[] certificates = connection.getServerCertificates();
+            X509Certificate x509Certificate = (X509Certificate) certificates[0]; // Assuming the first certificate is the server certificate
+
+            System.out.println("Expiration Date: " + x509Certificate.getNotAfter());
+            connection.disconnect();
+        } catch (SSLPeerUnverifiedException e) {
+            e.printStackTrace();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }
