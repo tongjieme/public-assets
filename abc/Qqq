@@ -1,28 +1,26 @@
-import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.SSLPeerUnverifiedException;
-import java.net.URL;
-import java.security.cert.Certificate;
-import java.security.cert.X509Certificate;
+<dependency>
+    <groupId>io.springfox</groupId>
+    <artifactId>springfox-swagger2</artifactId>
+    <version>2.9.2</version>
+</dependency>
 
-public class CertificateExpirationDate {
+<dependency>
+    <groupId>io.springfox</groupId>
+    <artifactId>springfox-swagger-ui</artifactId>
+    <version>2.9.2</version>
+</dependency>
 
-    public static void main(String[] args) {
-        String urlString = "https://example.com"; // Replace with your desired URL
 
-        try {
-            URL url = new URL(urlString);
-            HttpsURLConnection connection = (HttpsURLConnection) url.openConnection();
-            connection.connect();
 
-            Certificate[] certificates = connection.getServerCertificates();
-            X509Certificate x509Certificate = (X509Certificate) certificates[0]; // Assuming the first certificate is the server certificate
-
-            System.out.println("Expiration Date: " + x509Certificate.getNotAfter());
-            connection.disconnect();
-        } catch (SSLPeerUnverifiedException e) {
-            e.printStackTrace();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+@EnableSwagger2
+@Configuration
+public class SwaggerConfig {
+    @Bean
+    public Docket api() {
+        return new Docket(DocumentationType.SWAGGER_2)
+                .select()
+                .apis(RequestHandlerSelectors.basePackage("<your-controller-package>"))
+                .paths(PathSelectors.any())
+                .build();
     }
 }
