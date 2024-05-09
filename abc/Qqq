@@ -1,34 +1,40 @@
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import springfox.documentation.builders.RequestHandlerSelectors;
-import springfox.documentation.builders.PathSelectors;
-import springfox.documentation.spi.DocumentationType;
-import springfox.documentation.spring.web.plugins.Docket;
-import springfox.documentation.swagger2.annotations.EnableSwagger2;
+package main
 
-<dependency>
-    <groupId>io.springfox</groupId>
-    <artifactId>springfox-swagger2</artifactId>
-    <version>2.9.2</version>
-</dependency>
+import (
+    "io/ioutil"
+    "log"
+    "net/http"
+    "net/url"
+)
 
-<dependency>
-    <groupId>io.springfox</groupId>
-    <artifactId>springfox-swagger-ui</artifactId>
-    <version>2.9.2</version>
-</dependency>
-
-
-
-@EnableSwagger2
-@Configuration
-public class SwaggerConfig {
-    @Bean
-    public Docket api() {
-        return new Docket(DocumentationType.SWAGGER_2)
-                .select()
-                .apis(RequestHandlerSelectors.basePackage("<your-controller-package>"))
-                .paths(PathSelectors.any())
-                .build();
+func main() {
+    proxyStr := "http://proxy-ip:proxy-port"
+    proxyURL, err := url.Parse(proxyStr)
+    if err != nil {
+        log.Println(err)
     }
+
+    client := &http.Client{
+        Transport: &http.Transport{
+            Proxy: http.ProxyURL(proxyURL),
+        },
+    }
+
+    request, err := http.NewRequest("GET", "http://target-url", nil)
+    if err != nil {
+        log.Println(err)
+    }
+    
+    response, err := client.Do(request)
+    if err != nil {
+        log.Println(err)
+    }
+    defer response.Body.Close()
+
+    body, err := ioutil.ReadAll(response.Body)
+    if err != nil {
+        log.Println(err)
+    }
+
+    log.Println(string(body))
 }
