@@ -1,1 +1,45 @@
-    fmt.Println(currentTime.Format("2006-01-02 15:04:05"))
+import java.util.List;
+import java.util.ArrayList;
+import java.util.concurrent.*;
+
+public class ParallelFunctionsExecution {
+  public static void main(String[] args) throws InterruptedException, ExecutionException {
+    // let's assume we have a list of Callables (functions).
+    List<Callable<String>> tasks = new ArrayList<>();
+
+    tasks.add(() -> {
+      // Task1 starts
+      // your code here
+      return "Task 1 completed";
+    });
+
+    tasks.add(() -> {
+      // Task2 starts
+      // your code here
+      return "Task 2 completed";
+    });
+
+    // add more tasks if you want...
+
+    executeParallel(tasks);
+  }
+
+  public static <T> void executeParallel(List<Callable<T>> tasks) throws InterruptedException, ExecutionException {
+    // creating a pool of fixed threads
+    ExecutorService executorService = Executors.newFixedThreadPool(tasks.size());
+
+    try {
+      List<Future<T>> futures = executorService.invokeAll(tasks);
+
+      futures.forEach(future -> {
+        try {
+          System.out.println(future.get()); // retrieving and outputting results
+        } catch (InterruptedException | ExecutionException e) {
+          e.printStackTrace();
+        }
+      });
+    } finally {
+      executorService.shutdown(); // shut down the executorService
+    }
+  }
+}
