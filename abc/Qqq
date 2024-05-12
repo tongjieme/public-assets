@@ -1,43 +1,201 @@
-import java.util.List;
-import java.util.ArrayList;
-import java.util.concurrent.*;
+package com.example.performance.Controller;
 
-public class ParallelFunctionsExecution {
-  public static void main(String[] args) throws InterruptedException {
-    // Creating a list of Runnable tasks.
-    List<Runnable> tasks = new ArrayList<>();
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
-    tasks.add(() -> {
-      // Task1 starts
-      // your code here
-      System.out.println("Task 1 completed");
-    });
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 
-    tasks.add(() -> {
-      // Task2 starts
-      // your code here
-      System.out.println("Task 2 completed");
-    });
+import java.util.*;
+import java.util.stream.Collectors;
 
-    // add more tasks if you want...
+public class PropertyReader {
 
-    executeParallel(tasks);
-  }
-
-  public static void executeParallel(List<Runnable> tasks) throws InterruptedException {
-    // Using ExecutorService to create a thread pool.
-    ExecutorService executorService = Executors.newFixedThreadPool(tasks.size());
-
-    try {
-      // Transform Runnables into Callable<Void> with Executors.callable method
-      List<Callable<Void>> callables = tasks.stream()
-         .map(task -> Executors.callable(task, (Void) null))
-         .collect(Collectors.toList());
-
-      executorService.invokeAll(callables);
-    } finally {
-      // Always remember to shut down the executor service.
-      executorService.shutdown();
+    public static String getHierarchyProperties(Object obj) {
+        Map<String, Object> map = new HashMap<>();
+        try {
+            map = mapProperties(obj, obj.getClass());
+        } catch (IllegalAccessException | InstantiationException ex) {
+            System.out.println("Error reading properties: " + ex.getMessage());
+        }
+        Gson gson = new GsonBuilder().serializeNulls().create();
+        return gson.toJson(map);
     }
-  }
+
+    private static Map<String, Object> mapProperties(Object obj, Class<?> clazz) throws IllegalAccessException, InstantiationException {
+        Map<String, Object> resultMap = new HashMap<>();
+        Field[] fields = clazz.getDeclaredFields();
+        for(Field field : fields){
+            try {
+                field.setAccessible(true);
+                Object fieldValue = field.get(obj);
+                if(isCustomObject(field.getType()) && !isEnum(field.getType())) {
+                    if (fieldValue != null) {
+                        resultMap.put("Object_" + field.getName(), mapProperties(fieldValue, field.getType()));
+                    } else {
+                        Object nullFieldObject = field.getType().newInstance();
+                        resultMap.put("Object_" + field.getName(), mapProperties(nullFieldObject, field.getType()));
+                    }
+                } else if(isEnum(field.getType())) {
+                    resultMap.put(field.getName(), getEnumValuesAsStringList((Class<? extends Enum>) field.getType()));
+                } else {
+                    resultMap.put(field.getName(), fieldValue);
+                }
+                field.setAccessible(false);
+            } catch (Exception ex) {
+                if(field.getType().getSimpleName().equals("MarketData")) {
+                    resultMap.put("Object_" + field.getName(), "ERROR!!!");
+                }
+                System.out.println("Error processing field " + field.getName() + ": " + ex.getMessage());
+            }
+        }
+
+        Class<?> superclass = clazz.getSuperclass();
+        if(superclass != null && !superclass.equals(Object.class)) {
+            resultMap.put("class_" + superclass.getSimpleName(), mapProperties(obj, superclass));
+        }
+
+        Method[] methods = clazz.getDeclaredMethods();
+        for (Method method : methods) {
+            if(method.getDeclaringClass() != Object.class) {
+                resultMap.put("method_" + method.getName(), null);
+            }
+        }
+
+        return resultMap;
+    }
+
+    private static boolean isCustomObject(Class<?> clazz) {
+        return !clazz.isPrimitive() &&
+                !String.class.isAssignableFrom(clazz) &&
+                !Number.class.isAssignableFrom(clazz) &&
+                !Boolean.class.isAssignableFrom(clazz) &&
+                !Date.class.isAssignableFrom(clazz);
+    }
+
+    private static boolean isEnum(Class<?> clazz) {
+        return clazz.isEnum();
+    }
+
+    private static List<String> getEnumValuesAsStringList(Class<? extends Enum> enumType) {
+        return Arrays.stream(enumType.getEnumConstants())
+                .map(Enum::name)
+                .collect(Collectors.toList());
+    }
+}
+
+
+
+
+===========
+
+import {v4 as uuidv4} from "uuid";
+
+/**
+ * It converts a java json tree to ant tree param
+ * example input:
+ * {"method_getPrice":null,"method_getType":null,"quantity":0,"method_setPrice":null,"method_setVolume":null,"method_setType":null,"method_getQuantity":null,"type":null,"method_getName":null,"volume":0,"method_setQuantity":null,"price":0,"method_getVolume":null,"method_setName":null,"name":null,"class_PsInstrument":{"method_getInstrumentId":null,"method_setInstrumentId":null,"class_PpsInstrument":{"method_getPpsinstrumentId":null,"PpsinstrumentId":null,"class_SuperInstrument":{"SuperPpsinstrumentId":null},"method_setPpsinstrumentId":null},"instrumentId":null}}
+ * @param inputJson
+ * @returns {[]}
+ */
+export function convertJson(inputJson) {
+    const result = [];
+
+    for (const key in inputJson) {
+        if (inputJson.hasOwnProperty(key)) {
+            const element = {
+                title: key,
+                key: uuidv4(),
+            };
+
+            if (typeof inputJson[key] === 'object' && inputJson[key] !== null) {
+                const children = convertJson(inputJson[key]);
+
+                if (children.length > 0) {
+                    element.children = children;
+                }
+            }
+
+            result.push(element);
+        }
+    }
+
+    return result;
+}
+
+
+export function sortData(data) {
+    // Sort the current level
+    data.sort(function(a, b) {
+        var aHasChildren = 'children' in a;
+        var bHasChildren = 'children' in b;
+
+        if (aHasChildren && bHasChildren) {
+            // If both have children, sort alphabetically by title
+            return a['title'].localeCompare(b['title']);
+        } else if (aHasChildren) {
+            // If only 'a' has children, 'a' comes first
+            return -1;
+        } else if (bHasChildren) {
+            // If only 'b' has children, 'b' comes first
+            return 1;
+        } else {
+            // If neither has children, sort alphabetically by title
+            return a['title'].localeCompare(b['title']);
+        }
+    });
+
+    // For each item that has children, sort its children
+    for (var item of data) {
+        if ('children' in item) {
+            sortData(item.children);
+        }
+    }
+
+    return data;
+}
+
+
+=============
+
+import React from 'react';
+import {Button, Popover, Tree} from 'antd';
+import {convertJson, sortData} from "../utils/UtilJavaPropertyReader"
+
+let treeData = convertJson({"method_getPrice":null,"method_getType":null,"quantity":0,"method_setPrice":null,"method_setVolume":null,"method_setType":null,"method_getQuantity":null,"type":null,"method_getName":null,"volume":0,"method_setQuantity":null,"PsInstrument":{"method_getInstrumentId":null,"method_setInstrumentId":null,"instrumentId":null,"PpsInstrument":{"SuperInstrument":{"SuperPpsinstrumentId":null},"method_getPpsinstrumentId":null,"marketData":null,"PpsinstrumentId":null,"method_setPpsinstrumentId":null}},"price":0,"method_getVolume":null,"method_setName":null,"name":null});
+
+console.log(sortData(treeData))
+// treeData.sort((a,b) => {
+//     if (typeof a)
+// })
+export default function (){
+    const onSelect = (selectedKeys, info) => {
+        console.log('selected', selectedKeys, info);
+    };
+    const onCheck = (checkedKeys, info) => {
+        console.log('onCheck', checkedKeys, info);
+    };
+    return (
+        <Tree
+            // checkable
+            selectable={true}
+            onSelect={onSelect}
+            onCheck={onCheck}
+            treeData={treeData}
+            titleRender={(node) => {
+                let title = node.title;
+                let {key} = node
+
+                return <div>
+                    {
+
+                        <Popover placement="leftTop" title={""} content={title}>
+                            <span>{title}</span>
+                        </Popover>
+                    }
+                </div>
+            }
+            }
+        />
+    );
 }
