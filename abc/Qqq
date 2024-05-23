@@ -1,11 +1,15 @@
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
+SELECT
+  CASE 
+    WHEN EXTRACT(DAYOFWEEK FROM CURRENT_DATE()) = 2 THEN FORMAT_DATE('%Y-%m-%d', DATE_SUB(CURRENT_DATE(), INTERVAL 3 DAY))
+    WHEN EXTRACT(DAYOFWEEK FROM CURRENT_DATE()) = 1 THEN FORMAT_DATE('%Y-%m-%d', DATE_SUB(CURRENT_DATE(), INTERVAL 2 DAY))
+    ELSE FORMAT_DATE('%Y-%m-%d', DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY))
+  END AS T_1_Business_Day
 
-public class Main {
-    public static void main(String[] args) {
-        LocalDateTime now = LocalDateTime.now();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss");
-        String formatDateTime = now.format(formatter);
-        System.out.println(formatDateTime);
-    }
-}
+
+
+SELECT
+  CASE 
+    WHEN EXTRACT(DAYOFWEEK FROM CURRENT_DATE()) = 2 THEN FORMAT_DATE('%Y-%m-%d', DATE_SUB(CURRENT_DATE(), INTERVAL 4 DAY))
+    WHEN EXTRACT(DAYOFWEEK FROM CURRENT_DATE()) = 1 THEN FORMAT_DATE('%Y-%m-%d', DATE_SUB(CURRENT_DATE(), INTERVAL 3 DAY))
+    ELSE FORMAT_DATE('%Y-%m-%d', DATE_SUB(CURRENT_DATE(), INTERVAL 2 DAY))
+  END AS T_2_Business_Day
