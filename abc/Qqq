@@ -1,40 +1,20 @@
-import com.google.auth.oauth2.GoogleCredentials;
-import com.google.auth.oauth2.ServiceAccountCredentials;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
+import org.springframework.web.client.RestTemplate;
 
-public class YourClass {
+import java.net.InetSocketAddress;
+import java.net.Proxy;
 
-  @Autowired
-  private CredentialsProvider credentialsProvider;
+public class RestTemplateProxyExample {
 
-  public String getServiceAccountEmail() {
-    try {
-      GoogleCredentials credentials = credentialsProvider.getCredentials();
-      ServiceAccountCredentials serviceAccountCredentials =
-              (ServiceAccountCredentials) ((ImpersonatedCredentials) credentials).getSourceCredentials();
-      return serviceAccountCredentials.getClientEmail();
-    } catch (Exception e) {
-      throw new IllegalStateException("Failed to get service account email.", e);
+    public RestTemplate getRestTemplate() {
+
+        SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
+
+        Proxy proxy= new Proxy(Proxy.Type.HTTP, new InetSocketAddress("proxy.host", 8080));
+        requestFactory.setProxy(proxy);
+
+        return new RestTemplate(requestFactory);
     }
-  }
-}
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
-import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
-import org.springframework.security.oauth2.core.OAuth2AccessToken;
-
-public class ExampleService {
-    
-  @Autowired
-  private OAuth2AuthorizedClientService authorizedClientService;
-
-  public String getToken() {
-    OAuth2AuthorizedClient authorizedClient = this.authorizedClientService.loadAuthorizedClient("google", "service-account");
-    OAuth2AccessToken accessToken = authorizedClient.getAccessToken();
-  
-    return accessToken.getTokenValue();
-  }
 }
 
 
