@@ -1,3 +1,30 @@
+import com.google.api.gax.core.FixedCredentialsProvider;
+import com.google.auth.oauth2.GoogleCredentials;
+import com.google.auth.oauth2.ServiceAccountCredentials;
+import com.google.cloud.bigquery.BigQuery;
+import org.springframework.beans.factory.annotation.Autowired;
+import java.io.IOException;
+
+public class YourClass {
+    
+  @Autowired
+  BigQuery bigQuery;
+  
+  public String getServiceAccountEmail() {
+    try {
+      GoogleCredentials credentials = ((FixedCredentialsProvider) bigQuery.getOptions().getCredentialsProvider()).getCredentials();
+      if(credentials instanceof ServiceAccountCredentials) {
+        return ((ServiceAccountCredentials) credentials).getClientEmail();
+      } else {
+        throw new IllegalStateException("The credentials are not of service account type");
+      }
+    } catch (IOException e) {
+      throw new RuntimeException("Failed to get service account email", e);
+    }
+  }
+}
+
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
