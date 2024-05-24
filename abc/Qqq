@@ -1,3 +1,23 @@
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
+import org.springframework.security.oauth2.core.OAuth2AccessToken;
+
+public class ExampleService {
+    
+  @Autowired
+  private OAuth2AuthorizedClientService authorizedClientService;
+
+  public String getToken() {
+    OAuth2AuthorizedClient authorizedClient = this.authorizedClientService.loadAuthorizedClient("google", "service-account");
+    OAuth2AccessToken accessToken = authorizedClient.getAccessToken();
+  
+    return accessToken.getTokenValue();
+  }
+}
+
+
+
 SELECT
   CASE 
     WHEN EXTRACT(DAYOFWEEK FROM CURRENT_DATE()) = 2 THEN FORMAT_DATE('%Y-%m-%d', DATE_SUB(CURRENT_DATE(), INTERVAL 3 DAY))
