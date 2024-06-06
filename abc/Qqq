@@ -50,3 +50,38 @@ public String serializeObjectToBase64(Object obj) {
     }
     return base64Str;
 }
+
+
+
+
+
+
+
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.util.Base64;
+public <T> T unserializeBase64ToObject(Class<T> type, String base64Str) {
+    T obj = null;
+    try {
+        // Convert the Base64 string back to a byte array
+        byte[] byteArray = Base64.getDecoder().decode(base64Str);
+        
+        // Create a ByteArrayInputStream
+        ByteArrayInputStream bis = new ByteArrayInputStream(byteArray);
+        
+        // Wrap the ByteArrayInputStream with an ObjectInputStream
+        ObjectInputStream in = new ObjectInputStream(bis);
+        
+        // Read the object and cast it to the provided type
+        obj = type.cast(in.readObject());
+
+    } catch(IOException ex) {
+        System.out.println("IOException occurred");
+        ex.printStackTrace();
+    } catch (ClassNotFoundException ex) {
+        System.out.println("ClassNotFoundException occurred");
+        ex.printStackTrace();
+    }
+    return obj;
+}
