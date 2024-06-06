@@ -1,28 +1,19 @@
-import java.io.FileInputStream;
-import java.io.ObjectInputStream;
+public <T> T deserializeObject(Class<T> type, String filePath) {
+    T obj = null;
+    try {
+        FileInputStream file = new FileInputStream(filePath);
+        ObjectInputStream in = new ObjectInputStream(file);
 
-//...
+        obj = type.cast(in.readObject());
 
-try {
-    // Creating a File Input Stream
-    FileInputStream file = new FileInputStream("filename.ser");
-
-    // Creating an Object Input Stream
-    ObjectInputStream in = new ObjectInputStream(file);
-
-    // Read the object from file
-    MyClass obj = (MyClass) in.readObject();
-
-    // Close the Input Streams
-    in.close();
-    file.close();
-
-    System.out.println("Object has been deserialized from filename.ser");
-  
-} catch(IOException ex) {
-    System.out.println("IOException occurred");
-    ex.printStackTrace();
-} catch (ClassNotFoundException ex) {
-    System.out.println("ClassNotFoundException occurred");
-    ex.printStackTrace();
+        in.close();
+        file.close();
+    } catch (IOException ex) {
+        System.out.println("IOException occurred");
+        ex.printStackTrace();
+    } catch (ClassNotFoundException ex) {
+        System.out.println("ClassNotFoundException occurred");
+        ex.printStackTrace();
+    }
+    return obj;
 }
