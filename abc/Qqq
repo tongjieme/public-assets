@@ -17,3 +17,36 @@ public <T> T deserializeObject(Class<T> type, String filePath) {
     }
     return obj;
 }
+
+
+
+
+
+
+
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
+import java.util.Base64;
+
+
+public String serializeObjectToBase64(Object obj) {
+    String base64Str = null;
+    try {
+        // Create a ByteArrayOutputStream
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        // Wrap the ByteArrayOutputStream with an ObjectOutputStream
+        ObjectOutputStream objOut = new ObjectOutputStream(out);
+        // Write object to stream
+        objOut.writeObject(obj);
+        // Convert the serialized object into a byte array
+        byte[] byteArray = out.toByteArray();
+        // Convert the byte array to a Base64 encoded string
+        base64Str = Base64.getEncoder().encodeToString(byteArray);
+    } catch(IOException ex) {
+        System.out.println("IOException occurred");
+        ex.printStackTrace();
+    }
+    return base64Str;
+}
