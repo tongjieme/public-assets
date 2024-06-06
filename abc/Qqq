@@ -1,77 +1,26 @@
-import org.springframework.http.client.SimpleClientHttpRequestFactory;
-import org.springframework.web.client.RestTemplate;
+import java.io.FileOutputStream;
+import java.io.ObjectOutputStream;
 
-import java.net.InetSocketAddress;
-import java.net.Proxy;
+//...
 
-public class RestTemplateProxyExample {
+MyClass obj = new MyClass();
+try {
+    // Creating a File Output Stream
+    FileOutputStream file = new FileOutputStream("filename.ser");
 
-    public RestTemplate getRestTemplate() {
+    // Creating an Object Output Stream
+    ObjectOutputStream out = new ObjectOutputStream(file);
 
-        SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
+    // Write the object to file
+    out.writeObject(obj);
 
-        Proxy proxy= new Proxy(Proxy.Type.HTTP, new InetSocketAddress("proxy.host", 8080));
-        requestFactory.setProxy(proxy);
+    // Close the Output Streams
+    out.close();
+    file.close();
 
-        return new RestTemplate(requestFactory);
-    }
+    System.out.println("Object has been serialized and saved in filename.ser");
+  
+} catch(IOException ex) {
+    System.out.println("IOException occurred");
+    ex.printStackTrace();
 }
-
-
-
-SELECT
-  CASE 
-    WHEN EXTRACT(DAYOFWEEK FROM CURRENT_DATE()) = 2 THEN FORMAT_DATE('%Y-%m-%d', DATE_SUB(CURRENT_DATE(), INTERVAL 3 DAY))
-    WHEN EXTRACT(DAYOFWEEK FROM CURRENT_DATE()) = 1 THEN FORMAT_DATE('%Y-%m-%d', DATE_SUB(CURRENT_DATE(), INTERVAL 2 DAY))
-    ELSE FORMAT_DATE('%Y-%m-%d', DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY))
-  END AS T_1_Business_Day
-
-
-
-SELECT
-  CASE 
-    WHEN EXTRACT(DAYOFWEEK FROM CURRENT_DATE()) = 2 THEN FORMAT_DATE('%Y-%m-%d', DATE_SUB(CURRENT_DATE(), INTERVAL 4 DAY))
-    WHEN EXTRACT(DAYOFWEEK FROM CURRENT_DATE()) = 1 THEN FORMAT_DATE('%Y-%m-%d', DATE_SUB(CURRENT_DATE(), INTERVAL 3 DAY))
-    ELSE FORMAT_DATE('%Y-%m-%d', DATE_SUB(CURRENT_DATE(), INTERVAL 2 DAY))
-  END AS T_2_Business_Day
-
-
-
-DECLARE T_1_Business_Day DATE;
-DECLARE T_2_Business_Day DATE;
-
-SET T_1_Business_Day = (
-  SELECT
-    CASE 
-      WHEN EXTRACT(DAYOFWEEK FROM CURRENT_DATE()) = 2 THEN DATE_SUB(CURRENT_DATE(), INTERVAL 3 DAY)
-      WHEN EXTRACT(DAYOFWEEK FROM CURRENT_DATE()) = 1 THEN DATE_SUB(CURRENT_DATE(), INTERVAL 2 DAY)
-      ELSE DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY)
-    END
-);
-
-SET T_2_Business_Day = (
-  SELECT
-    CASE 
-      WHEN EXTRACT(DAYOFWEEK FROM CURRENT_DATE()) = 2 THEN DATE_SUB(CURRENT_DATE(), INTERVAL 4 DAY)
-      WHEN EXTRACT(DAYOFWEEK FROM CURRENT_DATE()) = 1 THEN DATE_SUB(CURRENT_DATE(), INTERVAL 3 DAY)
-      ELSE DATE_SUB(CURRENT_DATE(), INTERVAL 2 DAY)
-    END
-);
-
--- Use it in WHERE Clause 
-SELECT * 
-FROM `project.dataset.table` 
-WHERE date_column BETWEEN T_2_Business_Day AND T_1_Business_Day;
-
-
-
-DECLARE T_3_Business_Day DATE;
-
-SET T_3_Business_Day = (
-  SELECT
-    CASE 
-      WHEN EXTRACT(DAYOFWEEK FROM CURRENT_DATE()) = 2 THEN DATE_SUB(CURRENT_DATE(), INTERVAL 5 DAY)
-      WHEN EXTRACT(DAYOFWEEK FROM CURRENT_DATE()) = 1 THEN DATE_SUB(CURRENT_DATE(), INTERVAL 4 DAY)
-      ELSE DATE_SUB(CURRENT_DATE(), INTERVAL 3 DAY)
-    END
-);
