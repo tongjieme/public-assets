@@ -1,10 +1,29 @@
-function getNonCompletedFunds(allFunds, completedFunds) {
-  let allFundsArray = allFunds.split(",");
-  let completedFundsArray = completedFunds.split(",");
-  
-  let nonCompletedFundsArray = allFundsArray.filter(fund => {
-    return completedFundsArray.indexOf(fund) === -1;
-  });
-  
-  return nonCompletedFundsArray.join(",");
+import java.util.concurrent.*;
+import java.util.*;
+
+public class ConcurrencyMap {
+
+    public void processMapInParallel(Map<String, String> map) {
+
+        ExecutorService executor = Executors.newFixedThreadPool(map.size()); // Number of threads match number of keys
+
+        for(Map.Entry<String, String> entry : map.entrySet()){
+
+            Future<String> future = executor.submit(() -> {
+                String key = entry.getKey();
+                String value = entry.getValue();
+                // Execute your logic here based on key and value
+
+                return "Completed";
+            });
+        }
+
+        executor.shutdown();
+
+        try {
+            executor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+        } catch (InterruptedException e) {
+            System.out.println("Tasks interrupted");
+        }
+    }
 }
