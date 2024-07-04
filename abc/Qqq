@@ -1,7 +1,21 @@
-// Use Promise.all() to run the functions in parallel
-Promise.all(asyncFunctions)
+// Function to limit concurrency
+async function limitConcurrency(functions, limit) {
+  const results = [];
+  const queue = [...functions];
+
+  while (queue.length) {
+    const batch = queue.splice(0, limit);
+    const promises = batch.map(fn => fn());
+    results.push(...await Promise.all(promises));
+  }
+
+  return results;
+}
+
+// Use the limitConcurrency function to run the async functions with a limit of 2
+limitConcurrency(asyncFunctions, 2)
   .then(results => {
-    console.log(results); // Output: ['Data 1', 'Data 2', 'Data 3']
+    console.log(results); // Output: ['Data 1', 'Data 2', 'Data 3', 'Data 4']
   })
   .catch(error => {
     console.error(error);
