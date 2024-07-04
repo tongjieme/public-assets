@@ -1,60 +1,8 @@
-package bigqueryTest
-
-import (
-	"cloud.google.com/go/bigquery"
-	"context"
-	"github.com/tongjieme/go-utils/json"
-	"google.golang.org/api/iterator"
-	"log"
-	"math/rand"
-	"time"
-)
-
-func init() {
-	rand.Seed(time.Now().Unix())
-}
-func main() {
-	ctx := context.Background()
-	client, err := bigquery.NewClient(ctx, "ivory-analyst-154213")
-	if err != nil {
-		// TODO: Handle error.
-		log.Fatal(err)
-	}
-
-	//city2Inserter := client.Dataset("city").Table("city2").Inserter()
-
-	type score struct {
-		ID        string
-		Name      string
-		Timestamp int64
-	}
-	//time.Now().Unix()
-	//scores := []score{
-	//	{Name: "n10", ID: uuid.New().String(), Timestamp: time.Now().Unix()},
-	//}
-	//// Schema is inferred from the score type.
-	//if err := city2Inserter.Put(ctx, scores); err != nil {
-	//	// TODO: Handle error.
-	//	log.Fatal(err)
-	//}
-
-	q := client.Query(` SELECT id, name FROM city.city2 order by timestamp desc limit 1`)
-	it, err := q.Read(ctx)
-	if err != nil {
-		// TODO: Handle error.
-		log.Fatal(err)
-	}
-
-	for {
-		var c score
-		err := it.Next(&c)
-		if err == iterator.Done {
-			break
-		}
-		if err != nil {
-			// TODO: Handle error.
-			log.Fatal(err)
-		}
-		json.PrettyPrint(c)
-	}
-}
+// Use Promise.all() to run the functions in parallel
+Promise.all(asyncFunctions)
+  .then(results => {
+    console.log(results); // Output: ['Data 1', 'Data 2', 'Data 3']
+  })
+  .catch(error => {
+    console.error(error);
+  });
