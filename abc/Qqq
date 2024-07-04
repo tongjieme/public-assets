@@ -1,29 +1,60 @@
-import java.util.concurrent.*;
-import java.util.*;
+package bigqueryTest
 
-public class ConcurrencyMap {
+import (
+	"cloud.google.com/go/bigquery"
+	"context"
+	"github.com/tongjieme/go-utils/json"
+	"google.golang.org/api/iterator"
+	"log"
+	"math/rand"
+	"time"
+)
 
-    public void processMapInParallel(Map<String, String> map) {
+func init() {
+	rand.Seed(time.Now().Unix())
+}
+func main() {
+	ctx := context.Background()
+	client, err := bigquery.NewClient(ctx, "ivory-analyst-154213")
+	if err != nil {
+		// TODO: Handle error.
+		log.Fatal(err)
+	}
 
-        ExecutorService executor = Executors.newFixedThreadPool(map.size()); // Number of threads match number of keys
+	//city2Inserter := client.Dataset("city").Table("city2").Inserter()
 
-        for(Map.Entry<String, String> entry : map.entrySet()){
+	type score struct {
+		ID        string
+		Name      string
+		Timestamp int64
+	}
+	//time.Now().Unix()
+	//scores := []score{
+	//	{Name: "n10", ID: uuid.New().String(), Timestamp: time.Now().Unix()},
+	//}
+	//// Schema is inferred from the score type.
+	//if err := city2Inserter.Put(ctx, scores); err != nil {
+	//	// TODO: Handle error.
+	//	log.Fatal(err)
+	//}
 
-            Future<String> future = executor.submit(() -> {
-                String key = entry.getKey();
-                String value = entry.getValue();
-                // Execute your logic here based on key and value
+	q := client.Query(` SELECT id, name FROM city.city2 order by timestamp desc limit 1`)
+	it, err := q.Read(ctx)
+	if err != nil {
+		// TODO: Handle error.
+		log.Fatal(err)
+	}
 
-                return "Completed";
-            });
-        }
-
-        executor.shutdown();
-
-        try {
-            executor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
-        } catch (InterruptedException e) {
-            System.out.println("Tasks interrupted");
-        }
-    }
+	for {
+		var c score
+		err := it.Next(&c)
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			// TODO: Handle error.
+			log.Fatal(err)
+		}
+		json.PrettyPrint(c)
+	}
 }
