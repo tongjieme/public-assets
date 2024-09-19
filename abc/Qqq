@@ -1,14 +1,31 @@
-import {useState} from "react";
 
-export default function ({children, getValue, setValue, width}){
-    let _getValue = getValue || (() => {})
-    let _setValue = setValue || (() => {})
-    const [Width, setWidth] = useState(width)
-    return <div style={{width: Width + "px"}}>
-        {children}
-        <input type="number" value={Width} onChange={e => {
-            console.log(Width)
-            setWidth(e.target.value)
-        }}/>
-    </div>
+
+function flattenObject(obj, prefix = '') {
+    return _.transform(obj, (result, value, key) => {
+        const newKey = prefix ? `${prefix}.${key}` : key;
+
+        if (_.isObject(value) && !_.isArray(value)) {
+            // Recursively flatten nested objects
+            _.assign(result, flattenObject(value, newKey));
+        } else if (_.isArray(value)) {
+            // Handle arrays specifically
+            value.forEach((item, index) => {
+                if (_.isObject(item)) {
+                    // Recursively flatten array items if they are objects
+                    _.assign(result, flattenObject(item, `${newKey}[${index}]`));
+                } else {
+                    // If it's not an object, assign it directly
+                    result[`${newKey}[${index}]`] = item;
+                }
+            });
+        } else {
+            result[newKey] = value;
+        }
+    }, {});
 }
+
+// Example usage
+const input = [{ a: { A: "A" }, b: "b", c: [{ C: "C" }] }];
+
+const flattenedArray = input.map(item => flattenObject(item));
+console.log(flattenedArray);
