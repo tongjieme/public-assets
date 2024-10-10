@@ -1,1 +1,1 @@
-awk '/\+ base64 dist-res.zip"/{flag=1; next} /\+ echo '\''====== dist-res result end'\''/{flag=0} flag' <input_file>
+sed -n '/# Start Base64 Encoding/,/# End Base64 Encoding/p' <input_file> | sed '1d;$d'
