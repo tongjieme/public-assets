@@ -1,0 +1,40 @@
+import java.util.List;
+
+public class CsvUtils {
+
+    public static String convertPersonListToCsv(List<Person> people, String delimiter) {
+        StringBuilder csvBuilder = new StringBuilder();
+        
+        // Add CSV headers
+        csvBuilder.append("First Name").append(delimiter)
+                  .append("Last Name").append(delimiter)
+                  .append("Email").append(delimiter)
+                  .append("Age").append("\n");
+        
+        // Add CSV rows for each Person
+        for (Person person : people) {
+            String firstName = person.getFirstName().replace("\"", "\"\"");
+            String lastName = person.getLastName().replace("\"", "\"\"");
+            String email = person.getEmail().replace("\"", "\"\"");
+            int age = person.getAge();
+
+            csvBuilder.append("\"").append(firstName).append("\"").append(delimiter)
+                      .append("\"").append(lastName).append("\"").append(delimiter)
+                      .append("\"").append(email).append("\"").append(delimiter)
+                      .append(age).append("\n");
+        }
+        
+        return csvBuilder.toString();
+    }
+
+    public static void main(String[] args) {
+        List<Person> people = List.of(
+            new Person("John", "Doe", "john.doe@example.com", 30),
+            new Person("Jane", "Smith", "jane.smith@example.com", 25),
+            new Person("Alice", "Johnson", "alice.johnson@example.com", 28)
+        );
+
+        String csv = convertPersonListToCsv(people, ",");
+        System.out.println(csv);
+    }
+}
