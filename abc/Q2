@@ -1,0 +1,31 @@
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVPrinter;
+import java.io.IOException;
+import java.io.StringWriter;
+import java.util.Arrays;
+import java.util.List;
+
+public class CsvExample {
+
+    public static String convertToCsv(List<String[]> data) throws IOException {
+        StringWriter out = new StringWriter();
+        try (CSVPrinter printer = new CSVPrinter(out, CSVFormat.DEFAULT)) {
+            for (String[] row : data) {
+                printer.printRecord((Object[]) row);
+            }
+        }
+        return out.toString();
+    }
+
+    public static void main(String[] args) throws IOException {
+        List<String[]> data = Arrays.asList(
+                new String[]{"Name", "Role", "Email"},
+                new String[]{"John Doe", "Developer", "john.doe@example.com"},
+                new String[]{"Jane Smith", "Manager", "jane.smith@example.com"},
+                new String[]{"Alice Johnson", "Engineer", "alice.johnson@example.com"}
+        );
+
+        String csv = convertToCsv(data);
+        System.out.println(csv);
+    }
+}
