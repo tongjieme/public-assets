@@ -1,43 +1,16 @@
-const fs = require('fs');
-const crypto = require('crypto');
-const path = require('path');
-
-const FOLDER = "/folder1";
-
-// Helper function to generate MD5 hash
-function md5(input) {
-    return crypto.createHash('md5').update(input).digest('hex');
-}
-
-// Function to set or update a file
-function set(name, value) {
-    const filename = md5(name);
-    const filepath = path.join(FOLDER, filename);
-    
-    try {
-        // Write the value to the file, overwriting if it already exists
-        fs.writeFileSync(filepath, value, 'utf8');
-        console.log(`File ${filename} saved successfully.`);
-    } catch (err) {
-        console.error(`Error saving file: ${err.message}`);
+function getURLParameters(url)
+{
+    var result = {};
+		var searchIndex = url.indexOf("?");
+		if (searchIndex == -1 ) return result;
+    var sPageURL = url.substring(searchIndex +1);
+    var sURLVariables = sPageURL.split('&');
+    for (var i = 0; i < sURLVariables.length; i++)
+    {    	
+        var sParameterName = sURLVariables[i].split('=');      
+        result[sParameterName[0]] = sParameterName[1];
     }
+    return result;
 }
 
-// Function to get the content of a file
-function get(name) {
-    const filename = md5(name);
-    const filepath = path.join(FOLDER, filename);
-    
-    try {
-        if (fs.existsSync(filepath)) {
-            // Read and return the content of the file
-            const fileContent = fs.readFileSync(filepath, 'utf8');
-            return fileContent;
-        } else {
-            return "";  // File doesn't exist, return empty string
-        }
-    } catch (err) {
-        console.error(`Error reading file: ${err.message}`);
-        return "";
-    }
-}
+var GET = getURLParameters(location.href)
