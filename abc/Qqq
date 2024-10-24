@@ -1,16 +1,31 @@
-function getURLParameters(url)
-{
-    var result = {};
-		var searchIndex = url.indexOf("?");
-		if (searchIndex == -1 ) return result;
-    var sPageURL = url.substring(searchIndex +1);
-    var sURLVariables = sPageURL.split('&');
-    for (var i = 0; i < sURLVariables.length; i++)
-    {    	
-        var sParameterName = sURLVariables[i].split('=');      
-        result[sParameterName[0]] = sParameterName[1];
+import java.time.{DayOfWeek, LocalDate}
+import java.time.format.DateTimeFormatter
+
+object DateUtils {
+  // Formatter to convert LocalDate to yyyyMMdd string
+  private val dateFormatter = DateTimeFormatter.ofPattern("yyyyMMdd")
+
+  // Function to get the last Nth business date
+  def lastNBusinessDate(n: Int): String = {
+    // Start from today
+    var date = LocalDate.now()
+    var businessDaysCount = 0
+
+    // Iterate until we've skipped N business days
+    while (businessDaysCount < n) {
+      date = date.minusDays(1)
+      // If the day is a weekday, count it
+      if (date.getDayOfWeek != DayOfWeek.SATURDAY && date.getDayOfWeek != DayOfWeek.SUNDAY) {
+        businessDaysCount += 1
+      }
     }
-    return result;
+
+    // Format the resulting date as yyyyMMdd
+    date.format(dateFormatter)
+  }
 }
 
-var GET = getURLParameters(location.href)
+// Example usage
+object Example extends App {
+  println(DateUtils.lastNBusinessDate(5)) // Gets the date 5 business days ago
+}
