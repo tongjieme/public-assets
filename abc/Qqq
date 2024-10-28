@@ -1,31 +1,107 @@
-import java.time.{DayOfWeek, LocalDate}
-import java.time.format.DateTimeFormatter
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Allocation</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.21/lodash.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f7f7f7;
+        }
+        textarea {
+            width: 300px;
+            height: 150px;
+            margin-bottom: 10px;
+            display: block;
+        }
+        button {
+            display: block;
+            margin-bottom: 10px;
+            padding: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h2>Task Assignment Tool</h2>
+    <label for="staffArea">Staff Names (One per line):</label>
+    <textarea id="staffArea" placeholder="Enter staff names here..."></textarea>
 
-object DateUtils {
-  // Formatter to convert LocalDate to yyyyMMdd string
-  private val dateFormatter = DateTimeFormatter.ofPattern("yyyyMMdd")
+    <label for="taskArea">Tasks (One per line):</label>
+    <textarea id="taskArea" placeholder="Enter tasks here..."></textarea>
 
-  // Function to get the last Nth business date
-  def lastNBusinessDate(n: Int): String = {
-    // Start from today
-    var date = LocalDate.now()
-    var businessDaysCount = 0
+    <button id="assignButton">分配任务</button>
 
-    // Iterate until we've skipped N business days
-    while (businessDaysCount < n) {
-      date = date.minusDays(1)
-      // If the day is a weekday, count it
-      if (date.getDayOfWeek != DayOfWeek.SATURDAY && date.getDayOfWeek != DayOfWeek.SUNDAY) {
-        businessDaysCount += 1
-      }
-    }
+    <label for="resultArea">Results:</label>
+    <textarea id="resultArea" readonly placeholder="Results will appear here..."></textarea>
 
-    // Format the resulting date as yyyyMMdd
-    date.format(dateFormatter)
-  }
-}
+    <script>
+        $('#assignButton').click(function () {
+            // Get input values
+            const staffText = $('#staffArea').val().trim();
+            const taskText = $('#taskArea').val().trim();
 
-// Example usage
-object Example extends App {
-  println(DateUtils.lastNBusinessDate(5)) // Gets the date 5 business days ago
-}
+            if (staffText === '' || taskText === '') {
+                $('#resultArea').val('Please provide both staff names and tasks.');
+                return;
+            }
+
+            // Split staff and tasks into arrays
+            const staffArray = staffText.split('\n').map(name => name.trim()).filter(name => name);
+            const taskArray = taskText.split('\n').map(task => task.trim()).filter(task => task);
+
+            if (staffArray.length === 0 || taskArray.length === 0) {
+                $('#resultArea').val('Please provide valid staff names and tasks.');
+                return;
+            }
+
+            // Shuffle staff and tasks
+            const shuffledStaff = _.shuffle(staffArray);
+            const shuffledTasks = _.shuffle(taskArray);
+
+            
+            let result = '';
+            const staffTasks = {};
+            $.each(shuffledStaff, function(_, staff) {
+                staffTasks[staff] = [];
+            });
+
+            
+            const baseTaskCount = Math.floor(taskArray.length / staffArray.length);
+            const extraTasks = taskArray.length % staffArray.length;
+
+            // Assign base tasks evenly
+            let taskIndex = 0;
+            $.each(shuffledStaff, function(_, staff) {
+                for (let i = 0; i < baseTaskCount; i++) {
+                    if (taskIndex < shuffledTasks.length) {
+                        staffTasks[staff].push(shuffledTasks[taskIndex++]);
+                    }
+                }
+            });
+
+            // Randomly distribute remaining tasks
+            const extraTaskStaffIndices = _.shuffle([...Array(shuffledStaff.length).keys()]).slice(0, extraTasks);
+            $.each(extraTaskStaffIndices, function(_, index) {
+                if (taskIndex < shuffledTasks.length) {
+                    staffTasks[shuffledStaff[index]].push(shuffledTasks[taskIndex++]);
+                }
+            });
+
+            // Format result output
+            $.each(staffTasks, function(staff, tasks) {
+                result += `${staff}:\n`;
+                $.each(tasks, function(_, task) {
+                    result += `  - ${task}\n`;
+                });
+                result += '\n';
+            });
+
+            $('#resultArea').val(result);
+        });
+    </script>
+</body>
+</html>
