@@ -1,0 +1,29 @@
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import javax.servlet.http.HttpServletRequest;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Map;
+
+@RestController
+@RequestMapping("/api")
+public class HeaderController {
+
+    @GetMapping("/headers")
+    public Map<String, String> getAllHeaders(HttpServletRequest request) {
+        Map<String, String> headers = new HashMap<>();
+
+        // 获取所有请求头并放入Map中
+        Enumeration<String> headerNames = request.getHeaderNames();
+        while (headerNames.hasMoreElements()) {
+            String headerName = headerNames.nextElement();
+            String headerValue = request.getHeader(headerName);
+            headers.put(headerName, headerValue);
+        }
+
+        // 返回所有请求头，方便查看
+        return headers;
+    }
+}
