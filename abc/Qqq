@@ -1,3 +1,12 @@
-function containsAllElements(arrayA, arrayB) {
-  return arrayB.every(element => arrayA.includes(element));
-}
+public static void writeStringToFile(String data, String filePath) {
+        // Create a File object for the specified file path
+        File file = new File(filePath);
+
+        // Use BufferedWriter to write the string to the file
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
+            writer.write(data);  // Write the string to the file
+            System.out.println("Data has been written to the file: " + filePath);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
