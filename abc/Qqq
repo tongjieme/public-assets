@@ -1,3 +1,5 @@
+import javax.servlet.http.HttpServletRequest;
+
 @GetMapping("/getUrl")
     public String getFullRequestUrl(HttpServletRequest request) {
         String fullUrl = request.getRequestURL().toString();
