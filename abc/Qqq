@@ -1,12 +1,16 @@
-public static void writeStringToFile(String data, String filePath) {
-        // Create a File object for the specified file path
-        File file = new File(filePath);
-
-        // Use BufferedWriter to write the string to the file
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
-            writer.write(data);  // Write the string to the file
-            System.out.println("Data has been written to the file: " + filePath);
-        } catch (IOException e) {
-            e.printStackTrace();
+@GetMapping("/getUrl")
+    public String getFullRequestUrl(HttpServletRequest request) {
+        String fullUrl = request.getRequestURL().toString();
+        String queryString = request.getQueryString();
+        
+        // If there are query parameters, append them to the URL
+        if (queryString != null) {
+            fullUrl += "?" + queryString;
         }
+        
+        // Print the full URL to the console
+        System.out.println("Full Request URL: " + fullUrl);
+
+        // Optionally return it as a response
+        return fullUrl;
     }
