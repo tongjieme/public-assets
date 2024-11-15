@@ -1,0 +1,19 @@
+import scala.concurrent.{Future, ExecutionContext}
+import scala.concurrent.duration._
+import java.util.concurrent.Executors
+
+// Set up an execution context
+implicit val ec: ExecutionContext = ExecutionContext.fromExecutor(Executors.newCachedThreadPool())
+
+// Mimic setTimeout
+def setTimeout(delay: FiniteDuration)(callback: => Unit): Unit = {
+  Future {
+    Thread.sleep(delay.toMillis)
+    callback
+  }
+}
+
+// Example usage
+setTimeout(2.seconds) {
+  println("Hello after 2 seconds!")
+}
