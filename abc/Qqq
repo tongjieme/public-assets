@@ -1,29 +1,18 @@
-<dependency>
-    <groupId>javax.servlet</groupId>
-    <artifactId>javax.servlet-api</artifactId>
-    <version>4.0.1</version>
-    <scope>provided</scope>
-</dependency>
-
-
-
-
-
-import javax.servlet.http.HttpServletRequest;
-
-@GetMapping("/getUrl")
-    public String getFullRequestUrl(HttpServletRequest request) {
-        String fullUrl = request.getRequestURL().toString();
-        String queryString = request.getQueryString();
+public static List<String> listFilenamesInDirectory(String directoryPath) {
+        List<String> filenames = new ArrayList<>();
+        Path path = Paths.get(directoryPath);
         
-        // If there are query parameters, append them to the URL
-        if (queryString != null) {
-            fullUrl += "?" + queryString;
+        try {
+            // Using DirectoryStream to list files (non-recursive)
+            DirectoryStream<Path> stream = Files.newDirectoryStream(path);
+            for (Path entry : stream) {
+                if (Files.isRegularFile(entry)) {
+                    filenames.add(entry.getFileName().toString());
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
         }
         
-        // Print the full URL to the console
-        System.out.println("Full Request URL: " + fullUrl);
-
-        // Optionally return it as a response
-        return fullUrl;
+        return filenames;
     }
