@@ -1,19 +1,28 @@
-SELECT 
+SELECT
   COALESCE(c1.fundId, c2.fundId) AS fundId,
   COALESCE(c1.positionType, c2.positionType) AS positionType,
-  c1.c AS cob1_value,
-  c2.c AS cob2_value,
-  c2.c - c1.c AS difference,
-  CASE 
-    WHEN c1.fundId IS NULL THEN 'New in COB2'
-    WHEN c2.fundId IS NULL THEN 'Missing in COB2'
-    WHEN c1.c != c2.c THEN 'Value changed'
-    ELSE 'No change'
+  c1.value_cob1,
+  c2.value_cob2,
+  -- Absolute difference (COB2 - COB1)
+  c2.value_cob2 - c1.value_cob1 AS value_diff,
+  -- Percentage difference (handles division by zero)
+  CASE
+    WHEN c1.value_cob1 IS NULL THEN NULL -- New in COB2 (no previous value)
+    WHEN c2.value_cob2 IS NULL THEN NULL -- Missing in COB2
+    WHEN c1.value_cob1 = 0 THEN NULL     -- Avoid division by zero
+    ELSE ROUND((c2.value_cob2 - c1.value_cob1) / ABS(c1.value_cob1) * 100, 2)
+  END AS percent_diff,
+  -- Status indicator
+  CASE
+    WHEN c1.fundId IS NULL THEN 'NEW_IN_COB2'
+    WHEN c2.fundId IS NULL THEN 'MISSING_IN_COB2'
+    WHEN c1.value_cob1 = c2.value_cob2 THEN 'UNCHANGED'
+    ELSE 'CHANGED'
   END AS status
 FROM cob1 c1
-FULL OUTER JOIN cob2 c2 
-  ON c1.fundId = c2.fundId 
+FULL OUTER JOIN cob2 c2
+  ON c1.fundId = c2.fundId
   AND c1.positionType = c2.positionType
-ORDER BY 
-  COALESCE(c1.fundId, c2.fundId),
-  COALESCE(c1.positionType, c2.positionType);
+ORDER BY
+  fundId,
+  positionType
