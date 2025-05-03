@@ -1,31 +1,19 @@
-function findAllCalculations(numbers, expectNum) {
-    // 递归函数，尝试所有加减组合
-    function backtrack(index, currentSum, path) {
-        if (currentSum === expectNum && path.length > 0) {
-            // 如果当前和等于期望值，并且路径不为空，则记录结果
-            result.push(path.join(" "));
-        }
-
-        if (index === numbers.length) {
-            return; // 遍历完所有数字后结束
-        }
-
-        // 尝试跳过当前数字
-        backtrack(index + 1, currentSum, path);
-
-        // 尝试加法
-        backtrack(index + 1, currentSum + numbers[index], [...path, `+ ${numbers[index]}`]);
-
-        // 尝试减法
-        backtrack(index + 1, currentSum - numbers[index], [...path, `- ${numbers[index]}`]);
-    }
-
-    const result = [];
-    backtrack(0, 0, []); // 从第一个数字开始，初始和为 0
-
-    if (result.length === 0) {
-        return `无法通过加减数组中的数字得到 ${expectNum}`;
-    }
-
-    return `可以通过以下方式得到 ${expectNum}:\n` + result.join("\n");
-}
+SELECT 
+  COALESCE(c1.fundId, c2.fundId) AS fundId,
+  COALESCE(c1.positionType, c2.positionType) AS positionType,
+  c1.c AS cob1_value,
+  c2.c AS cob2_value,
+  c2.c - c1.c AS difference,
+  CASE 
+    WHEN c1.fundId IS NULL THEN 'New in COB2'
+    WHEN c2.fundId IS NULL THEN 'Missing in COB2'
+    WHEN c1.c != c2.c THEN 'Value changed'
+    ELSE 'No change'
+  END AS status
+FROM cob1 c1
+FULL OUTER JOIN cob2 c2 
+  ON c1.fundId = c2.fundId 
+  AND c1.positionType = c2.positionType
+ORDER BY 
+  COALESCE(c1.fundId, c2.fundId),
+  COALESCE(c1.positionType, c2.positionType);
