@@ -1,3 +1,36 @@
-configFileProvider([configFile(fileId: 'abc.xml', variable: 'MAVEN_SETTINGS')]) {
-    sh "cat ${MAVEN_SETTINGS}"  // 打印文件内容验证
+import java.util.concurrent.*;
+
+public class AsyncExample2 {
+    public static void main(String[] args) {
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        
+        try {
+            // 提交第一个任务
+            Future<String> future1 = executor.submit(() -> doLogic1());
+            
+            // 提交第二个任务
+            Future<Integer> future2 = executor.submit(() -> doLogic2());
+            
+            // 等待两个任务完成
+            String result1 = future1.get();
+            Integer result2 = future2.get();
+            
+            System.out.println("两个任务都成功完成: " + result1 + ", " + result2);
+        } catch (InterruptedException | ExecutionException e) {
+            System.err.println("任务执行失败: " + e.getMessage());
+            throw new RuntimeException("至少一个任务失败", e);
+        } finally {
+            executor.shutdown();
+        }
+    }
+    
+    private static String doLogic1() {
+        // 第一段业务逻辑
+        return "逻辑1结果";
+    }
+    
+    private static Integer doLogic2() {
+        // 第二段业务逻辑
+        return 42;
+    }
 }
