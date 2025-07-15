@@ -1,36 +1,82 @@
-import java.util.concurrent.*;
+-- create table
 
-public class AsyncExample2 {
-    public static void main(String[] args) {
-        ExecutorService executor = Executors.newFixedThreadPool(2);
-        
-        try {
-            // 提交第一个任务
-            Future<String> future1 = executor.submit(() -> doLogic1());
-            
-            // 提交第二个任务
-            Future<Integer> future2 = executor.submit(() -> doLogic2());
-            
-            // 等待两个任务完成
-            String result1 = future1.get();
-            Integer result2 = future2.get();
-            
-            System.out.println("两个任务都成功完成: " + result1 + ", " + result2);
-        } catch (InterruptedException | ExecutionException e) {
-            System.err.println("任务执行失败: " + e.getMessage());
-            throw new RuntimeException("至少一个任务失败", e);
-        } finally {
-            executor.shutdown();
-        }
-    }
-    
-    private static String doLogic1() {
-        // 第一段业务逻辑
-        return "逻辑1结果";
-    }
-    
-    private static Integer doLogic2() {
-        // 第二段业务逻辑
-        return 42;
-    }
-}
+CREATE OR REPLACE TABLE `ivory-analyst-154213.city.users3` (
+  user_id STRING,
+  user_name STRING,
+  create_date TIMESTAMP,
+  user_id_hash INT64  -- This will be used for partitioning
+)
+PARTITION BY RANGE_BUCKET(user_id_hash, GENERATE_ARRAY(0, 4000, 1))
+CLUSTER BY user_id
+OPTIONS (
+  require_partition_filter = false,
+  description = "Users table partitioned by hashed user_id and clustered by user_id"
+);
+
+
+-- generate fake data
+
+-- Insert 10,000 random users with unique user_ids into partitioned table
+INSERT INTO `ivory-analyst-154213.city.users2` (user_id, user_name, create_date, user_id_hash)
+WITH sequences AS (
+  SELECT num FROM UNNEST(GENERATE_ARRAY(1, 10000)) AS num
+)
+SELECT
+  -- Generate unique user_id (format: US-XXXXX-RAND)
+  CONCAT(
+    'USA-',
+    LPAD(CAST(num AS STRING), 5, '0'),
+    '-',
+    SUBSTR('ABCDEFGHJKLMNPQRSTUVWXYZ', MOD(num, 23) + 1, 1),
+    SUBSTR('ABCDEFGHJKLMNPQRSTUVWXYZ', MOD(num * 7, 26) + 1, 1)
+  ) AS user_id,
+  
+  -- Generate realistic names
+  CONCAT(
+    CASE MOD(num, 8)
+      WHEN 0 THEN 'James' WHEN 1 THEN 'Emma'
+      WHEN 2 THEN 'Liam' WHEN 3 THEN 'Olivia'
+      WHEN 4 THEN 'Noah' WHEN 5 THEN 'Ava'
+      WHEN 6 THEN 'William' WHEN 7 THEN 'Sophia'
+    END,
+    ' ',
+    CASE MOD(num * 3, 8)
+      WHEN 0 THEN 'Smith' WHEN 1 THEN 'Johnson'
+      WHEN 2 THEN 'Williams' WHEN 3 THEN 'Brown'
+      WHEN 4 THEN 'Jones' WHEN 5 THEN 'Garcia'
+      WHEN 6 THEN 'Miller' WHEN 7 THEN 'Davis'
+    END
+  ) AS user_name,
+  
+  -- Random timestamps within 3 years
+  TIMESTAMP_ADD(
+    TIMESTAMP '2020-01-01 00:00:00 UTC',
+    INTERVAL CAST(RAND() * 365 * 3 AS INT64) DAY
+  ) AS create_date,
+  
+  -- Hash value for partitioning (0-3999)
+  MOD(ABS(FARM_FINGERPRINT(CONCAT(
+    'US-',
+    LPAD(CAST(num AS STRING), 5, '0'),
+    '-',
+    SUBSTR('ABCDEFGHJKLMNPQRSTUVWXYZ', MOD(num, 23) + 1, 1),
+    SUBSTR('ABCDEFGHJKLMNPQRSTUVWXYZ', MOD(num * 7, 26) + 1, 1)
+  ))), 4000) AS user_id_hash
+FROM sequences;
+
+
+
+select * from `ivory-analyst-154213.city.users2` where user_id = 'US-04171-J';
+
+-- 直接使用分区列过滤
+SELECT * FROM `ivory-analyst-154213.city.users2`
+WHERE user_id_hash = MOD(ABS(FARM_FINGERPRINT('US-00042-AB')), 4000)
+AND user_id = 'US-00042-AB';
+
+-- partition size
+select count (distinct user_id_hash) from `ivory-analyst-154213.city.users2`;
+select count (distinct user_id) from `ivory-analyst-154213.city.users2`;
+
+
+
+
