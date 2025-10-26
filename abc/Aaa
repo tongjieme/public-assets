@@ -1,44 +1,27 @@
 import java.util.{Timer, TimerTask}
 
-class DebounceWithoutCommons {
-  private var debounceTimer: Timer = _
-  private val DEBOUNCE_DELAY: Long = 500 // 防抖延迟500ms
+class Debouncer(delayMs: Long) {
+  private val timer = new Timer()
+  private var currentTask: Option[TimerTask] = None
 
-  // 触发防抖任务
-  def triggerDebouncedTask(taskParam: String): Unit = {
-    // 取消之前的延迟任务（重置防抖）
-    if (debounceTimer != null) {
-      debounceTimer.cancel()
+  // 传入要防抖的任务，新调用会取消旧任务并重新计时
+  def debounce(task: => Unit): Unit = {
+    // 取消当前等待的任务（若存在）
+    currentTask.foreach(_.cancel())
+    // 创建新任务并延迟执行
+    val newTask = new TimerTask {
+      override def run(): Unit = task
     }
-
-    // 新定时器延迟执行
-    debounceTimer = new Timer()
-    debounceTimer.schedule(
-      new TimerTask {
-        override def run(): Unit = doActualTask(taskParam)
-      },
-      DEBOUNCE_DELAY
-    )
+    currentTask = Some(newTask)
+    timer.schedule(newTask, delayMs)
   }
 
-  // 核心业务任务（使用JDK原生时间方法）
-  private def doActualTask(param: String): Unit = {
-    val currentTime = System.currentTimeMillis()
-    println(s"执行防抖任务 | 参数：$param | 时间：$currentTime")
-  }
+  // 关闭定时器（避免内存泄漏）
+  def shutdown(): Unit = timer.cancel()
 }
 
-// 测试入口
-object DebounceWithoutCommonsTest extends App {
-  val debounce = new DebounceWithoutCommons()
-  
-  // 模拟高频触发
-  debounce.triggerDebouncedTask("第一次")
-  Thread.sleep(200)
-  debounce.triggerDebouncedTask("第二次")
-  Thread.sleep(300)
-  debounce.triggerDebouncedTask("第三次")
-
-  // 等待任务执行
-  Thread.sleep(1000)
-}
+// 使用示例
+val debouncer = new Debouncer(500) // 500毫秒防抖窗口
+debouncer.debounce(println("执行1")) // 被取消
+debouncer.debounce(println("执行2")) // 被取消
+debouncer.debounce(println("执行3")) // 最终执行
