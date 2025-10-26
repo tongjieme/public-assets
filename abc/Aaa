@@ -1,27 +1,114 @@
-import java.util.{Timer, TimerTask}
+import io.vertx.core.{AbstractVerticle, Vertx}
+import io.vertx.ext.web.Router
+import io.vertx.ext.web.RoutingContext
 
-class Debouncer(delayMs: Long) {
-  private val timer = new Timer()
-  private var currentTask: Option[TimerTask] = None
+/**
+ * 1. 基于 Vert.x Timer 实现的防抖工具类
+ */
+class VertxDebouncer(vertx: Vertx, delayMs: Long) {
+  // 存储当前待执行的定时器ID（用于取消旧任务）
+  private var currentTimerId: Option[Long] = None
 
-  // 传入要防抖的任务，新调用会取消旧任务并重新计时
+  /**
+   * 触发防抖：新调用会取消旧任务、重置计时
+   * @param task 最终要执行的业务逻辑（会在 Vert.x 上下文内异步执行）
+   */
   def debounce(task: => Unit): Unit = {
-    // 取消当前等待的任务（若存在）
-    currentTask.foreach(_.cancel())
-    // 创建新任务并延迟执行
-    val newTask = new TimerTask {
-      override def run(): Unit = task
-    }
-    currentTask = Some(newTask)
-    timer.schedule(newTask, delayMs)
+    // 第一步：取消上一次未执行的定时器（若存在），实现“重置计时”
+    currentTimerId.foreach(timerId => {
+      vertx.cancelTimer(timerId)
+      println(s"[防抖] 取消旧定时器（ID：$timerId），重置计时")
+    })
+
+    // 第二步：启动新定时器，延迟后执行任务
+    val newTimerId = vertx.setTimer(delayMs, _ => {
+      println(s"[防抖] 延迟 ${delayMs}ms 后执行最终任务")
+      task // 执行实际业务逻辑
+      currentTimerId = None // 任务执行后清空定时器ID，避免残留
+    })
+
+    // 第三步：更新当前定时器ID，用于下一次取消
+    currentTimerId = Some(newTimerId)
+    println(s"[防抖] 启动新定时器（ID：$newTimerId），等待 ${delayMs}ms")
   }
 
-  // 关闭定时器（避免内存泄漏）
-  def shutdown(): Unit = timer.cancel()
+  /**
+   * 销毁防抖器：取消所有未执行的定时器，避免内存泄漏
+   */
+  def destroy(): Unit = {
+    currentTimerId.foreach { timerId =>
+      vertx.cancelTimer(timerId)
+      println(s"[防抖] 销毁时取消未执行定时器（ID：$timerId）")
+    }
+  }
 }
 
-// 使用示例
-val debouncer = new Debouncer(500) // 500毫秒防抖窗口
-debouncer.debounce(println("执行1")) // 被取消
-debouncer.debounce(println("执行2")) // 被取消
-debouncer.debounce(println("执行3")) // 最终执行
+/**
+ * 2. 业务 Verticle（相当于 Controller 层，处理 HTTP 请求）
+ */
+class DebounceControllerVerticle extends AbstractVerticle {
+  // 声明防抖器（在 start 方法中初始化）
+  private var taskDebouncer: VertxDebouncer = _
+
+  override def start(): Unit = {
+    // 初始化防抖器：传入当前 Vert.x 实例 + 防抖延迟（这里设为 1000ms = 1秒）
+    taskDebouncer = new VertxDebouncer(vertx, 1000)
+
+    // 配置 HTTP 路由
+    val router = Router.router(vertx)
+    // 定义接口：/api/doTask（GET 请求，每次调用触发防抖）
+    router.get("/api/doTask").handler(handleTaskRequest)
+
+    // 启动 HTTP 服务（监听 8080 端口）
+    vertx.createHttpServer()
+      .requestHandler(router) // 将路由绑定到 HTTP 服务
+      .listen(8080)
+      .onSuccess(_ => println("✅ 服务启动成功！可访问：http://localhost:8080/api/doTask"))
+      .onFailure(e => println(s"❌ 服务启动失败：${e.getMessage}"))
+  }
+
+  /**
+   * HTTP 接口处理逻辑：接收请求并触发防抖
+   */
+  private val handleTaskRequest: RoutingContext => Unit = ctx => {
+    // 1. 获取请求参数（示例：获取 url 中的 "taskId" 参数）
+    val taskId = ctx.request().getParam("taskId") match {
+      case null => "默认任务" // 无参数时用默认值
+      case id => s"任务$id"
+    }
+
+    // 2. 触发防抖：实际业务逻辑写在 debounce 的参数中
+    taskDebouncer.debounce {
+      // 这里是“最终要执行的业务逻辑”（仅最后一次触发会执行）
+      println(s"📌 执行【$taskId】的核心业务：比如查询数据库、调用第三方接口等")
+    }
+
+    // 3. 立即返回响应给前端（不等待防抖任务执行）
+    ctx.response()
+      .setStatusCode(200) // 成功状态码
+      .putHeader("Content-Type", "text/plain;charset=utf-8")
+      .end(s"请求已接收！【$taskId】将在 1秒 后执行（若1秒内无新请求）")
+  }
+
+  /**
+   * Verticle 停止时：销毁防抖器，清理资源
+   */
+  override def stop(): Unit = {
+    taskDebouncer.destroy()
+    println("🔚 服务停止，防抖器已销毁，资源清理完成")
+  }
+}
+
+/**
+ * 3. 程序入口（启动 Vert.x 并部署 Verticle）
+ */
+object DebounceExampleMain {
+  def main(args: Array[String]): Unit = {
+    // 创建 Vert.x 实例
+    val vertx = Vertx.vertx()
+
+    // 部署业务 Verticle（DebounceControllerVerticle）
+    vertx.deployVerticle(new DebounceControllerVerticle())
+      .onFailure(e => println(s"Verticle 部署失败：${e.getMessage}"))
+  }
+}
