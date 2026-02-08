@@ -1,114 +1,90 @@
-import io.vertx.core.{AbstractVerticle, Vertx}
-import io.vertx.ext.web.Router
-import io.vertx.ext.web.RoutingContext
+步骤1：从 B keystore 导出证书                                                                                                                                                                    
+   
+  # 导出为证书文件（公钥）                                                                                                                                                                         
+  keytool -export -alias your_alias \                                                                                                                                                            
+    -keystore B.keystore \
+    -file certificate.crt \
+    -storepass B_keystore_password
 
-/**
- * 1. 基于 Vert.x Timer 实现的防抖工具类
- */
-class VertxDebouncer(vertx: Vertx, delayMs: Long) {
-  // 存储当前待执行的定时器ID（用于取消旧任务）
-  private var currentTimerId: Option[Long] = None
+  # 或者导出为 PKCS12 格式（包含私钥）
+  keytool -importkeystore \
+    -srckeystore B.keystore \
+    -destkeystore B.p12 \
+    -deststoretype PKCS12 \
+    -srcalias your_alias \
+    -destalias your_alias \
+    -srcstorepass B_keystore_password \
+    -deststorepass B_p12_password
 
-  /**
-   * 触发防抖：新调用会取消旧任务、重置计时
-   * @param task 最终要执行的业务逻辑（会在 Vert.x 上下文内异步执行）
-   */
-  def debounce(task: => Unit): Unit = {
-    // 第一步：取消上一次未执行的定时器（若存在），实现“重置计时”
-    currentTimerId.foreach(timerId => {
-      vertx.cancelTimer(timerId)
-      println(s"[防抖] 取消旧定时器（ID：$timerId），重置计时")
-    })
+  步骤2：导入到 A keystore
 
-    // 第二步：启动新定时器，延迟后执行任务
-    val newTimerId = vertx.setTimer(delayMs, _ => {
-      println(s"[防抖] 延迟 ${delayMs}ms 后执行最终任务")
-      task // 执行实际业务逻辑
-      currentTimerId = None // 任务执行后清空定时器ID，避免残留
-    })
+  # 方法1：导入证书文件（只有公钥，不能签名）
+  keytool -import -alias your_alias \
+    -keystore A.keystore \
+    -file certificate.crt \
+    -storepass A_keystore_password
 
-    // 第三步：更新当前定时器ID，用于下一次取消
-    currentTimerId = Some(newTimerId)
-    println(s"[防抖] 启动新定时器（ID：$newTimerId），等待 ${delayMs}ms")
-  }
+  # 方法2：导入 PKCS12（包含私钥，可以签名）
+  keytool -importkeystore \
+    -srckeystore B.p12 \
+    -srcstoretype PKCS12 \
+    -destkeystore A.keystore \
+    -srcalias your_alias \
+    -destalias your_alias \
+    -srcstorepass B_p12_password \
+    -deststorepass A_keystore_password
 
-  /**
-   * 销毁防抖器：取消所有未执行的定时器，避免内存泄漏
-   */
-  def destroy(): Unit = {
-    currentTimerId.foreach { timerId =>
-      vertx.cancelTimer(timerId)
-      println(s"[防抖] 销毁时取消未执行定时器（ID：$timerId）")
-    }
-  }
-}
+  步骤3：验证导入结果
 
-/**
- * 2. 业务 Verticle（相当于 Controller 层，处理 HTTP 请求）
- */
-class DebounceControllerVerticle extends AbstractVerticle {
-  // 声明防抖器（在 start 方法中初始化）
-  private var taskDebouncer: VertxDebouncer = _
+  # 查看 A keystore 中的证书
+  keytool -list -v -keystore A.keystore \
+    -alias your_alias \
+    -storepass A_keystore_password
 
-  override def start(): Unit = {
-    // 初始化防抖器：传入当前 Vert.x 实例 + 防抖延迟（这里设为 1000ms = 1秒）
-    taskDebouncer = new VertxDebouncer(vertx, 1000)
+  # 查看有效期
+  keytool -list -v -keystore A.keystore \
+    -storepass A_keystore_password | grep "Alias.*your_alias" -A 10
 
-    // 配置 HTTP 路由
-    val router = Router.router(vertx)
-    // 定义接口：/api/doTask（GET 请求，每次调用触发防抖）
-    router.get("/api/doTask").handler(handleTaskRequest)
+  完整示例脚本
 
-    // 启动 HTTP 服务（监听 8080 端口）
-    vertx.createHttpServer()
-      .requestHandler(router) // 将路由绑定到 HTTP 服务
-      .listen(8080)
-      .onSuccess(_ => println("✅ 服务启动成功！可访问：http://localhost:8080/api/doTask"))
-      .onFailure(e => println(s"❌ 服务启动失败：${e.getMessage}"))
-  }
+  #!/bin/bash
+  ALIAS="your_alias"
+  B_KEYSTORE="B.keystore"
+  A_KEYSTORE="A.keystore"
+  B_PASSWORD="changeit"
+  A_PASSWORD="changeit"
 
-  /**
-   * HTTP 接口处理逻辑：接收请求并触发防抖
-   */
-  private val handleTaskRequest: RoutingContext => Unit = ctx => {
-    // 1. 获取请求参数（示例：获取 url 中的 "taskId" 参数）
-    val taskId = ctx.request().getParam("taskId") match {
-      case null => "默认任务" // 无参数时用默认值
-      case id => s"任务$id"
-    }
+  # 1. 从 B 导出为 PKCS12
+  keytool -importkeystore \
+    -srckeystore $B_KEYSTORE \
+    -destkeystore temp.p12 \
+    -deststoretype PKCS12 \
+    -srcalias $ALIAS \
+    -destalias $ALIAS \
+    -srcstorepass $B_PASSWORD \
+    -deststorepass $B_PASSWORD
 
-    // 2. 触发防抖：实际业务逻辑写在 debounce 的参数中
-    taskDebouncer.debounce {
-      // 这里是“最终要执行的业务逻辑”（仅最后一次触发会执行）
-      println(s"📌 执行【$taskId】的核心业务：比如查询数据库、调用第三方接口等")
-    }
+  # 2. 导入到 A（会覆盖相同 alias）
+  keytool -importkeystore \
+    -srckeystore temp.p12 \
+    -srcstoretype PKCS12 \
+    -destkeystore $A_KEYSTORE \
+    -srcalias $ALIAS \
+    -destalias $ALIAS \
+    -srcstorepass $B_PASSWORD \
+    -deststorepass $A_PASSWORD \
+    -noprompt
 
-    // 3. 立即返回响应给前端（不等待防抖任务执行）
-    ctx.response()
-      .setStatusCode(200) // 成功状态码
-      .putHeader("Content-Type", "text/plain;charset=utf-8")
-      .end(s"请求已接收！【$taskId】将在 1秒 后执行（若1秒内无新请求）")
-  }
+  # 3. 清理临时文件
+  rm temp.p12
 
-  /**
-   * Verticle 停止时：销毁防抖器，清理资源
-   */
-  override def stop(): Unit = {
-    taskDebouncer.destroy()
-    println("🔚 服务停止，防抖器已销毁，资源清理完成")
-  }
-}
+  echo "导入完成！"
 
-/**
- * 3. 程序入口（启动 Vert.x 并部署 Verticle）
- */
-object DebounceExampleMain {
-  def main(args: Array[String]): Unit = {
-    // 创建 Vert.x 实例
-    val vertx = Vertx.vertx()
+  注意事项
 
-    // 部署业务 Verticle（DebounceControllerVerticle）
-    vertx.deployVerticle(new DebounceControllerVerticle())
-      .onFailure(e => println(s"Verticle 部署失败：${e.getMessage}"))
-  }
-}
+  ⚠️ 重要：
+  - 导入前建议先备份 A keystore
+  - 如果 alias 已存在，使用 -noprompt 或 -keypass 覆盖
+  - 确保两个 keystore 的密码设置正确
+  - PKCS12 方式会同时导入私钥和证书，推荐使用
+  - 只有私钥才能用于签名，纯证书只能用于验证
