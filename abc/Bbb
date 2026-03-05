@@ -1,17 +1,9 @@
-import org.springframework.context.annotation.Configuration;
-import org.springframework.web.servlet.config.annotation.CorsRegistry;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
-
-@Configuration
-public class CorsConfig implements WebMvcConfigurer {
-
-    @Override
-    public void addCorsMappings(CorsRegistry registry) {
-        registry.addMapping("/**") // 对所有路径应用此配置
-                .allowedOrigins("*") // 允许所有域名
-                .allowedMethods("*") // 允许所有HTTP方法 (GET, POST, PUT, DELETE等)
-                .allowedHeaders("*") // 允许所有请求头
-                .allowCredentials(false) // 默认为false，设为true允许携带凭证（如cookie）
-                .maxAge(3600); // 预检请求的有效期，单位为秒
-    }
+public static long currentTimestampMicros() {
+    Instant now = Instant.now();
+    
+    long seconds = now.getEpochSecond();
+    int nanos = now.getNano();
+    
+    // 正确计算：秒 * 1_000_000 + 纳秒 / 1000（保留微秒精度）
+    return seconds * 1_000_000 + nanos / 1000;
 }
