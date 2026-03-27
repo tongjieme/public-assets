@@ -1,11 +1,33 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; connect-src 'self'">
-    <title>Secure Page</title>
-</head>
-<body>
-    <!-- Your content here -->
-</body>
-</html>
+{
+  "servers": {
+    "playwright": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@playwright/mcp@latest",
+        "--browser", "chrome",       // 你要用的：chrome | msedge | firefox | webkit
+        "--headless", "false"        // false=可见窗口，true=无头
+      ],
+      "env": {
+        // 1) 禁止 Playwright 自动下载浏览器
+        "PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD": "1",
+
+        // 2) 指定你本地浏览器的可执行文件路径（必填）
+        // Windows 示例（Chrome）
+        "PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+        // Windows 示例（Edge）
+        // "PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
+
+        // macOS 示例（Chrome）
+        // "PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+
+        // Linux 示例（Chrome）
+        // "PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH": "/usr/bin/google-chrome",
+
+        // 3) 可选：指定浏览器缓存/用户数据目录（不填则默认）
+        // "PLAYWRIGHT_BROWSERS_PATH": "D:/tools/playwright-browsers"
+      }
+    }
+  }
+}
