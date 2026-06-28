@@ -1,28 +1,54 @@
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import org.springframework.web.filter.CorsFilter;
+```
+你是一位资深的业务分析师（BA）。请阅读我提供的Java代码仓库，**透过代码看业务**，生成一份「业务逻辑读书笔记」。
 
-@Configuration
-public class CorsConfig {
+核心要求：思维路径是**业务逻辑的推导**，不是代码执行流程的复述。代码只是你还原业务真相的"证据"，你的任务是从证据反推出业务为什么这么设计、它在现实世界里对应什么样的业务规则、流程和约束。
 
-    @Bean
-    public CorsFilter corsFilter() {
-        CorsConfiguration config = new CorsConfiguration();
-        // 允许所有来源
-        config.addAllowedOriginPattern("*");
-        // 允许所有请求头
-        config.addAllowedHeader("*");
-        // 允许所有请求方法 GET POST PUT DELETE 等
-        config.addAllowedMethod("*");
-        // 允许携带 cookie
-        config.setAllowCredentials(true);
+## 输入
+[在此粘贴 repo 的 Java 代码，或关键模块的路径与内容]
 
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        // 对所有路径生效
-        source.registerCorsConfiguration("/**", config);
+## 输出要求
 
-        return new CorsFilter(source);
-    }
-}
+### 一、业务领域定位
+- 这是一个什么业务的系统？服务于哪些角色（用户/商家/审核员/系统）？
+- 它在现实业务中承担什么职责、解决什么问题？
+
+### 二、业务逻辑推导路径（核心）
+
+请以**业务问题**为驱动，而不是以代码调用链为驱动。每一条推导从一个"业务上必然要回答的问题"出发，用代码作为证据去回答它。
+
+格式如下：
+
+> ❓ 业务问题：[例如"一个订单在什么情况下才允许退款？"]
+>   ├─ 证据：代码中 OrderService.refund() 里有 `status == COMPLETED && payTime 在30天内` 的判断
+>   ├─ 业务推导：说明现实中存在"退款时效"和"订单完成才可退"两条业务政策
+>   ├─ 为什么：推测这背后的业务动机（防止滥用？财务对账周期？平台规则？）
+>   └─ 业务结论：得出一条用业务语言表述的规则，并标注置信度（确定/推测）
+
+推导时请聚焦这些**业务维度**，而非技术维度：
+- **业务实体的生命周期**：一个核心对象（订单/账户/合同）从生到死经历哪些业务状态，每次状态变化背后是什么业务事件触发的
+- **业务规则与政策**：金额计算规则、权限规则、时效规则、额度/上限、优惠/惩罚逻辑
+- **业务角色与权限**：谁能做什么、谁不能做什么
+- **业务约束与底线**：什么是绝对不允许发生的（财务不能为负、库存不能超卖），代码如何守住这条线
+- **业务流程的分叉**：同一个业务在什么条件下走向不同结局（审核通过/驳回、正常/异常补偿）
+- **隐含的业务背景**：为什么要有这个字段、这个校验、这个重试——它对应现实里的什么场景
+
+⚠️ 注意：
+- 不要写"先调用A再调用B然后进入C"这种代码流水账
+- 要写"业务上之所以要先做A，是因为……，否则会导致……的业务后果"
+- 把每段代码逻辑都"还原"成它所代表的真实业务意图
+
+### 三、核心业务实体状态机
+挑选 1-2 个最核心的业务对象，画出它的**业务状态流转图**（mermaid），并说明每次流转的**业务触发事件**和**业务前置条件**。
+
+### 四、业务规则清单
+| 业务规则（用业务语言） | 代码证据 | 业务动机（为什么有此规则） | 置信度 |
+
+### 五、业务盲区与风险
+- 仅凭代码无法确定、需要找业务方确认的业务问题
+- 从业务角度看可能存在的规则漏洞或风险（如某状态下缺少校验会造成什么业务损失）
+
+## 风格
+- 全程站在业务视角说话，技术名词只作为证据出现
+- 区分"代码明确写了的业务规则"和"我从代码推测的业务意图"
+- 不臆造业务，证据不足就归入第五部分
+```
