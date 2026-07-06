@@ -1,90 +1,18 @@
-步骤1：从 B keystore 导出证书                                                                                                                                                                    
-   
-  # 导出为证书文件（公钥）                                                                                                                                                                         
-  keytool -export -alias your_alias \                                                                                                                                                            
-    -keystore B.keystore \
-    -file certificate.crt \
-    -storepass B_keystore_password
+请针对"[主题/观点]"这个内容,生成两个版本的笔记,用于对比"浓缩式笔记"和"保留推理过程的笔记"之间的理解差异。
 
-  # 或者导出为 PKCS12 格式（包含私钥）
-  keytool -importkeystore \
-    -srckeystore B.keystore \
-    -destkeystore B.p12 \
-    -deststoretype PKCS12 \
-    -srcalias your_alias \
-    -destalias your_alias \
-    -srcstorepass B_keystore_password \
-    -deststorepass B_p12_password
+**版本一:浓缩版笔记**
+- 用要点式(bullet points)列出该主题下的核心结论
+- 只保留最终观点,不展开论证过程
+- 风格类似市面上常见的"精华笔记"或知识卡片
 
-  步骤2：导入到 A keystore
+**版本二:优化版笔记(保留推理过程)**
+请按照以下结构展开:
+1. 先说明这个观点是为了回答什么问题、解决什么困惑,或针对什么现象提出的
+2. 针对版本一中每一条容易让人产生疑问的结论,追问"为什么会这样"或"这是如何推导出来的",给出背后的逻辑、例子或类比来解释
+3. 如果各个观点之间有递进、因果或对比关系,要明确写出来(比如"不仅如此……""这也是为什么……""与此相对……")
+4. 语言要像在给一个完全不了解这个主题的人讲解,做到"读完就能懂,还能复述给别人听"
 
-  # 方法1：导入证书文件（只有公钥，不能签名）
-  keytool -import -alias your_alias \
-    -keystore A.keystore \
-    -file certificate.crt \
-    -storepass A_keystore_password
+**最后**,用1-2句话总结这两个版本的核心区别(比如:一个讲"是什么",一个讲"为什么"和"怎么用")。
 
-  # 方法2：导入 PKCS12（包含私钥，可以签名）
-  keytool -importkeystore \
-    -srckeystore B.p12 \
-    -srcstoretype PKCS12 \
-    -destkeystore A.keystore \
-    -srcalias your_alias \
-    -destalias your_alias \
-    -srcstorepass B_p12_password \
-    -deststorepass A_keystore_password
-
-  步骤3：验证导入结果
-
-  # 查看 A keystore 中的证书
-  keytool -list -v -keystore A.keystore \
-    -alias your_alias \
-    -storepass A_keystore_password
-
-  # 查看有效期
-  keytool -list -v -keystore A.keystore \
-    -storepass A_keystore_password | grep "Alias.*your_alias" -A 10
-
-  完整示例脚本
-
-  #!/bin/bash
-  ALIAS="your_alias"
-  B_KEYSTORE="B.keystore"
-  A_KEYSTORE="A.keystore"
-  B_PASSWORD="changeit"
-  A_PASSWORD="changeit"
-
-  # 1. 从 B 导出为 PKCS12
-  keytool -importkeystore \
-    -srckeystore $B_KEYSTORE \
-    -destkeystore temp.p12 \
-    -deststoretype PKCS12 \
-    -srcalias $ALIAS \
-    -destalias $ALIAS \
-    -srcstorepass $B_PASSWORD \
-    -deststorepass $B_PASSWORD
-
-  # 2. 导入到 A（会覆盖相同 alias）
-  keytool -importkeystore \
-    -srckeystore temp.p12 \
-    -srcstoretype PKCS12 \
-    -destkeystore $A_KEYSTORE \
-    -srcalias $ALIAS \
-    -destalias $ALIAS \
-    -srcstorepass $B_PASSWORD \
-    -deststorepass $A_PASSWORD \
-    -noprompt
-
-  # 3. 清理临时文件
-  rm temp.p12
-
-  echo "导入完成！"
-
-  注意事项
-
-  ⚠️ 重要：
-  - 导入前建议先备份 A keystore
-  - 如果 alias 已存在，使用 -noprompt 或 -keypass 覆盖
-  - 确保两个 keystore 的密码设置正确
-  - PKCS12 方式会同时导入私钥和证书，推荐使用
-  - 只有私钥才能用于签名，纯证书只能用于验证
+主题/观点:[填写具体主题,可以是一本书的某个观点、一个理论、一个概念、一句话,甚至是一个现象]
+背景要求(可选):[如果有特定角度或深度要求,可以在这里说明,比如"面向初学者""结合实际案例""偏学术向"等]
